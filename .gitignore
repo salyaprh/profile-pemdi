@@ -23,3 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+
+# Keluaran Playwright
+playwright-report
+test-results
+
+# Cakupan Vitest
+coverage

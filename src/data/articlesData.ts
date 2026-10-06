@@ -1,23 +1,33 @@
-// Adapted for React Starter - using public paths for images
+// Data dummy artikel/portofolio. Gambar disajikan dari folder `public`.
+
+export type ArticleCategory = 'Layanan Publik' | 'Kebijakan & Regulasi' | 'Panduan Pengguna';
+
+/** Nilai filter kategori di halaman Portofolio ('Semua' = tanpa filter). */
+export type CategoryFilter = 'Semua' | ArticleCategory;
+
 export interface Article {
   id: string;
   title: string;
   excerpt: string;
   author: string;
+  /** Format ISO: YYYY-MM-DD */
   date: string;
   category: ArticleCategory;
   mediaSrc: string;
-  avatar: string;
+  /** Paragraf isi artikel. Bila kosong, dipakai `placeholderContent`. */
+  content?: string[];
+  /** Sumber artikel; ditampilkan di bawah gambar hanya bila diisi. */
+  source?: string;
 }
 
 // Import article images (cycle through 1-6)
 // Using public paths in Vite
-const article1Image = '/assets/articles/article-1.png';
-const article2Image = '/assets/articles/article-2.png';
-const article3Image = '/assets/articles/article-3.png';
-const article4Image = '/assets/articles/article-4.png';
-const article5Image = '/assets/articles/article-5.png';
-const article6Image = '/assets/articles/article-6.png';
+const article1Image = '/images/articles/article-1.webp';
+const article2Image = '/images/articles/article-2.webp';
+const article3Image = '/images/articles/article-3.webp';
+const article4Image = '/images/articles/article-4.webp';
+const article5Image = '/images/articles/article-5.webp';
+const article6Image = '/images/articles/article-6.webp';
 
 const articleImages = [
   article1Image,
@@ -33,16 +43,6 @@ const getArticleImage = (index: number): string => {
   return articleImages[index % 6];
 };
 
-const avatarImage =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjQiIGZpbGw9IiNGM0Y0RjYiLz4KPHN2ZyB4PSIxMiIgeT0iMTIiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTIgMTJDMTQuNzYxNCAxMiAxNyA5Ljc2MTQyIDE3IDdDMTcgNC4yMzg1OCAxNC43NjE0IDIgMTIgMkM5LjIzODU4IDIgNyA0LjIzODU4IDcgN0M3IDkuNzYxNDIgOS4yMzg1OCAxMiAxMiAxMloiIGZpbGw9IiM2QjcyODAiLz4KPHBhdGggZD0iTTEyIDE0QzguNjY4NzUgMTQgMiAxNS43OTE3IDIgMTlWMjJIMjJWMjlDMTkgMTkgMTIgMTQgMTIgMTRaIiBmaWxsPSIjNkI3MjgwIi8+Cjwvc3ZnPgo8L3N2Zz4K';
-
-// Categories sesuai design
-export type ArticleCategory =
-  | 'Semua'
-  | 'Layanan Publik'
-  | 'Kebijakan & Regulasi'
-  | 'Panduan Pengguna';
-
 export const articles: Article[] = [
   {
     id: '1',
@@ -53,17 +53,16 @@ export const articles: Article[] = [
     date: '2025-01-24',
     category: 'Kebijakan & Regulasi',
     mediaSrc: getArticleImage(0),
-    avatar: avatarImage,
   },
   {
     id: '2',
     title: 'PANRB Resmikan Pembaruan Sistem Digital Terpadu',
-    excerpt: 'Pembaruan ini mencakup peningkatan konten FAQ, artikel ke...',
+    excerpt:
+      'Pembaruan ini mencakup peningkatan konten FAQ, artikel kebijakan, dan pusat bantuan bagi ASN.',
     author: 'Haechal',
     date: '2025-01-20',
     category: 'Kebijakan & Regulasi',
     mediaSrc: getArticleImage(1),
-    avatar: avatarImage,
   },
   {
     id: '3',
@@ -74,7 +73,6 @@ export const articles: Article[] = [
     date: '2025-01-18',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(2),
-    avatar: avatarImage,
   },
   {
     id: '4',
@@ -85,7 +83,6 @@ export const articles: Article[] = [
     date: '2025-01-15',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(3),
-    avatar: avatarImage,
   },
   {
     id: '5',
@@ -96,7 +93,6 @@ export const articles: Article[] = [
     date: '2025-01-12',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(4),
-    avatar: avatarImage,
   },
   {
     id: '6',
@@ -107,7 +103,6 @@ export const articles: Article[] = [
     date: '2025-01-10',
     category: 'Kebijakan & Regulasi',
     mediaSrc: getArticleImage(5),
-    avatar: avatarImage,
   },
   {
     id: '7',
@@ -118,7 +113,6 @@ export const articles: Article[] = [
     date: '2025-01-08',
     category: 'Panduan Pengguna',
     mediaSrc: getArticleImage(0),
-    avatar: avatarImage,
   },
   {
     id: '8',
@@ -129,7 +123,6 @@ export const articles: Article[] = [
     date: '2025-01-05',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(1),
-    avatar: avatarImage,
   },
   {
     id: '9',
@@ -140,7 +133,6 @@ export const articles: Article[] = [
     date: '2025-01-03',
     category: 'Kebijakan & Regulasi',
     mediaSrc: getArticleImage(2),
-    avatar: avatarImage,
   },
   {
     id: '10',
@@ -151,7 +143,6 @@ export const articles: Article[] = [
     date: '2025-01-01',
     category: 'Panduan Pengguna',
     mediaSrc: getArticleImage(3),
-    avatar: avatarImage,
   },
   {
     id: '11',
@@ -162,7 +153,6 @@ export const articles: Article[] = [
     date: '2024-12-28',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(4),
-    avatar: avatarImage,
   },
   {
     id: '12',
@@ -173,7 +163,6 @@ export const articles: Article[] = [
     date: '2024-12-25',
     category: 'Panduan Pengguna',
     mediaSrc: getArticleImage(5),
-    avatar: avatarImage,
   },
   {
     id: '13',
@@ -184,7 +173,6 @@ export const articles: Article[] = [
     date: '2024-12-22',
     category: 'Kebijakan & Regulasi',
     mediaSrc: getArticleImage(0),
-    avatar: avatarImage,
   },
   {
     id: '14',
@@ -195,7 +183,6 @@ export const articles: Article[] = [
     date: '2024-12-20',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(1),
-    avatar: avatarImage,
   },
   {
     id: '15',
@@ -206,7 +193,6 @@ export const articles: Article[] = [
     date: '2024-12-18',
     category: 'Panduan Pengguna',
     mediaSrc: getArticleImage(2),
-    avatar: avatarImage,
   },
   {
     id: '16',
@@ -217,7 +203,6 @@ export const articles: Article[] = [
     date: '2024-12-15',
     category: 'Kebijakan & Regulasi',
     mediaSrc: getArticleImage(3),
-    avatar: avatarImage,
   },
   {
     id: '17',
@@ -228,7 +213,6 @@ export const articles: Article[] = [
     date: '2024-12-12',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(4),
-    avatar: avatarImage,
   },
   {
     id: '18',
@@ -239,7 +223,6 @@ export const articles: Article[] = [
     date: '2024-12-10',
     category: 'Panduan Pengguna',
     mediaSrc: getArticleImage(5),
-    avatar: avatarImage,
   },
   {
     id: '19',
@@ -250,7 +233,6 @@ export const articles: Article[] = [
     date: '2024-12-08',
     category: 'Kebijakan & Regulasi',
     mediaSrc: getArticleImage(0),
-    avatar: avatarImage,
   },
   {
     id: '20',
@@ -261,7 +243,6 @@ export const articles: Article[] = [
     date: '2024-12-05',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(1),
-    avatar: avatarImage,
   },
   {
     id: '21',
@@ -272,7 +253,6 @@ export const articles: Article[] = [
     date: '2024-12-03',
     category: 'Panduan Pengguna',
     mediaSrc: getArticleImage(2),
-    avatar: avatarImage,
   },
   {
     id: '22',
@@ -283,7 +263,6 @@ export const articles: Article[] = [
     date: '2024-12-01',
     category: 'Kebijakan & Regulasi',
     mediaSrc: getArticleImage(3),
-    avatar: avatarImage,
   },
   {
     id: '23',
@@ -294,7 +273,6 @@ export const articles: Article[] = [
     date: '2024-11-28',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(4),
-    avatar: avatarImage,
   },
   {
     id: '24',
@@ -305,7 +283,6 @@ export const articles: Article[] = [
     date: '2024-11-25',
     category: 'Panduan Pengguna',
     mediaSrc: getArticleImage(5),
-    avatar: avatarImage,
   },
   {
     id: '25',
@@ -316,7 +293,6 @@ export const articles: Article[] = [
     date: '2024-11-22',
     category: 'Kebijakan & Regulasi',
     mediaSrc: getArticleImage(0),
-    avatar: avatarImage,
   },
   {
     id: '26',
@@ -327,18 +303,15 @@ export const articles: Article[] = [
     date: '2024-11-20',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(1),
-    avatar: avatarImage,
   },
   {
     id: '27',
     title: 'Tutorial: Menggunakan Fitur Bookmark Artikel',
-    excerpt:
-      'Pelajari cara menyimpan artikel favorit Anda untuk dibaca kembali di kemudian hari.',
+    excerpt: 'Pelajari cara menyimpan artikel favorit Anda untuk dibaca kembali di kemudian hari.',
     author: 'Haechal',
     date: '2024-11-18',
     category: 'Panduan Pengguna',
     mediaSrc: getArticleImage(2),
-    avatar: avatarImage,
   },
   {
     id: '28',
@@ -349,7 +322,6 @@ export const articles: Article[] = [
     date: '2024-11-15',
     category: 'Kebijakan & Regulasi',
     mediaSrc: getArticleImage(3),
-    avatar: avatarImage,
   },
   {
     id: '29',
@@ -360,7 +332,6 @@ export const articles: Article[] = [
     date: '2024-11-12',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(4),
-    avatar: avatarImage,
   },
   {
     id: '30',
@@ -371,7 +342,6 @@ export const articles: Article[] = [
     date: '2024-11-10',
     category: 'Panduan Pengguna',
     mediaSrc: getArticleImage(5),
-    avatar: avatarImage,
   },
   {
     id: '31',
@@ -382,7 +352,6 @@ export const articles: Article[] = [
     date: '2024-11-08',
     category: 'Kebijakan & Regulasi',
     mediaSrc: getArticleImage(0),
-    avatar: avatarImage,
   },
   {
     id: '32',
@@ -393,7 +362,6 @@ export const articles: Article[] = [
     date: '2024-11-05',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(1),
-    avatar: avatarImage,
   },
   {
     id: '33',
@@ -404,7 +372,6 @@ export const articles: Article[] = [
     date: '2024-11-03',
     category: 'Panduan Pengguna',
     mediaSrc: getArticleImage(2),
-    avatar: avatarImage,
   },
   {
     id: '34',
@@ -415,7 +382,6 @@ export const articles: Article[] = [
     date: '2024-11-01',
     category: 'Kebijakan & Regulasi',
     mediaSrc: getArticleImage(3),
-    avatar: avatarImage,
   },
   {
     id: '35',
@@ -426,7 +392,6 @@ export const articles: Article[] = [
     date: '2024-10-28',
     category: 'Layanan Publik',
     mediaSrc: getArticleImage(4),
-    avatar: avatarImage,
   },
   {
     id: '36',
@@ -437,14 +402,63 @@ export const articles: Article[] = [
     date: '2024-10-25',
     category: 'Panduan Pengguna',
     mediaSrc: getArticleImage(5),
-    avatar: avatarImage,
   },
 ];
 
-// Category options untuk Chip filter
-export const categoryOptions = [
+// Opsi kategori untuk Chip filter
+export const categoryOptions: { label: string; value: CategoryFilter }[] = [
   { label: 'Semua', value: 'Semua' },
   { label: 'Layanan Publik', value: 'Layanan Publik' },
   { label: 'Kebijakan & Regulasi', value: 'Kebijakan & Regulasi' },
   { label: 'Panduan Pengguna', value: 'Panduan Pengguna' },
 ];
+
+export function isCategoryFilter(value: string | null): value is CategoryFilter {
+  return categoryOptions.some((option) => option.value === value);
+}
+
+export function getArticleById(id: string): Article | undefined {
+  return articles.find((article) => article.id === id);
+}
+
+/** Artikel dengan kategori sama (selain artikel itu sendiri), terbaru lebih dulu. */
+export function getRelatedArticles(article: Article, limit = 3): Article[] {
+  return articles
+    .filter((item) => item.id !== article.id && item.category === article.category)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, limit);
+}
+
+/** Pencarian sederhana pada judul, ringkasan, dan kategori. */
+export function searchArticles(query: string, limit = 6): Article[] {
+  const term = query.trim().toLowerCase();
+  if (!term) return [];
+  return articles
+    .filter((article) =>
+      [article.title, article.excerpt, article.category].some((field) =>
+        field.toLowerCase().includes(term),
+      ),
+    )
+    .slice(0, limit);
+}
+
+// TODO: ganti dengan isi artikel asli per artikel (field `content`) dari CMS/API.
+// Sampai saat itu, semua artikel memakai teks contoh berikut.
+export const placeholderContent: string[] = [
+  'Jakarta — Pemerintah terus mendorong percepatan transformasi digital di lingkungan Aparatur Sipil Negara (ASN) melalui penguatan integrasi layanan dalam platform INAgov.',
+  'Kementerian Pendayagunaan Aparatur Negara dan Reformasi Birokrasi (KemenPANRB) menyatakan bahwa integrasi berbagai layanan ASN ke dalam satu portal bertujuan untuk mengurangi fragmentasi sistem yang selama ini menghambat efisiensi kerja.',
+  '"Selama ini ASN harus berpindah-pindah platform untuk mengakses layanan yang berbeda. Dengan INAgov, kami ingin menghadirkan pengalaman yang lebih sederhana, konsisten, dan efisien," ujar perwakilan KemenPANRB dalam keterangan resminya.',
+  'Integrasi ini mencakup layanan informasi kepegawaian, pengembangan kompetensi, akses kebijakan terbaru, dan berbagai layanan administratif lainnya. Melalui platform terpadu ini, diharapkan ASN dapat menghemat waktu dan meningkatkan produktivitas kerja.',
+  'Selain efisiensi, penguatan INAgov juga diharapkan dapat meningkatkan transparansi dan akuntabilitas dalam penyelenggaraan pemerintahan. Semua informasi dan layanan yang tersedia di platform ini dapat diakses dengan mudah oleh seluruh ASN di seluruh Indonesia.',
+  'Ke depan, pemerintah berencana untuk terus mengembangkan fitur INAgov dengan menambahkan lebih banyak layanan dan meningkatkan kualitas konten informasi yang tersedia. Langkah ini merupakan bagian dari komitmen pemerintah dalam mempercepat transformasi digital sektor publik.',
+];
+
+export function getArticleContent(article: Article): string[] {
+  return article.content?.length ? article.content : placeholderContent;
+}
+
+/** Perkiraan waktu baca dalam menit (200 kata/menit, minimal 1). */
+export function getReadingMinutes(article: Article): number {
+  const words = getArticleContent(article).join(' ').split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.ceil(words / 200));
+}
