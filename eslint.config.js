@@ -3,6 +3,7 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import reactHooks from 'eslint-plugin-react-hooks';
 import testingLibrary from 'eslint-plugin-testing-library';
+import playwright from 'eslint-plugin-playwright';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -20,7 +21,7 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
       parserOptions: {
-        project: ['./tsconfig.json', './tsconfig.node.json'],
+        project: ['./tsconfig.json', './tsconfig.node.json', './e2e/tsconfig.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -60,9 +61,16 @@ export default defineConfig([
     },
   },
 
+  // Uji end-to-end Playwright
+  {
+    files: ['e2e/**/*.ts'],
+    extends: [playwright.configs['flat/recommended']],
+    languageOptions: { globals: globals.node },
+  },
+
   // Kode sisi build (Node)
   {
-    files: ['vite.config.ts', 'vite-plugins/**/*.ts'],
+    files: ['vite.config.ts', 'playwright.config.ts', 'vite-plugins/**/*.ts'],
     languageOptions: { globals: globals.node },
   },
 

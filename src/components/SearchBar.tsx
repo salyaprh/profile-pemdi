@@ -20,6 +20,7 @@ export default function SearchBar({ className, onSelect }: SearchBarProps) {
 
   const results = useMemo(() => searchArticles(query), [query]);
   const hasQuery = query.trim().length > 0;
+  const panelOpen = open && hasQuery;
 
   const close = () => {
     setOpen(false);
@@ -28,8 +29,12 @@ export default function SearchBar({ className, onSelect }: SearchBarProps) {
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    // Escape ditangani BasicDropdown IDDS (menutup panel dan mempertahankan teks).
-    if (event.key === 'Enter' && results.length > 0) {
+    if (event.key === 'Escape' && panelOpen) {
+      // Escape pertama hanya menutup panel hasil. stopPropagation mencegah Header ikut menutup
+      // seluruh menu mobile; Escape berikutnya (panel sudah tertutup) baru menutup menu.
+      event.stopPropagation();
+      setOpen(false);
+    } else if (event.key === 'Enter' && results.length > 0) {
       event.preventDefault();
       navigate(paths.article(results[0].id));
       close();
@@ -39,7 +44,7 @@ export default function SearchBar({ className, onSelect }: SearchBarProps) {
   return (
     <BasicDropdown
       className={className}
-      open={open && hasQuery}
+      open={panelOpen}
       onOpenChange={setOpen}
       placement="bottom-end"
       panelClassName="w-[320px] max-w-[calc(100vw-2.5rem)]"

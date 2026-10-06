@@ -82,6 +82,37 @@ describe('SearchBar', () => {
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
+  it('Escape saat panel terbuka tidak diteruskan ke atas (agar menu mobile tidak ikut tertutup)', async () => {
+    const user = userEvent.setup();
+    const onWindowKeyDown = vi.fn();
+    window.addEventListener('keydown', onWindowKeyDown);
+    render(<SearchBar />);
+
+    await user.type(getInput(), 'zzzxxx');
+    await screen.findByText(/Tidak ada hasil untuk/);
+    await user.keyboard('{Escape}');
+
+    expect(
+      onWindowKeyDown.mock.calls.filter(([event]) => (event as KeyboardEvent).key === 'Escape'),
+    ).toHaveLength(0);
+    window.removeEventListener('keydown', onWindowKeyDown);
+  });
+
+  it('Escape saat panel tertutup diteruskan ke atas (agar Header dapat menutup menu)', async () => {
+    const user = userEvent.setup();
+    const onWindowKeyDown = vi.fn();
+    window.addEventListener('keydown', onWindowKeyDown);
+    render(<SearchBar />);
+
+    await user.click(getInput());
+    await user.keyboard('{Escape}');
+
+    expect(
+      onWindowKeyDown.mock.calls.filter(([event]) => (event as KeyboardEvent).key === 'Escape'),
+    ).toHaveLength(1);
+    window.removeEventListener('keydown', onWindowKeyDown);
+  });
+
   it('Escape menutup panel tetapi mempertahankan teks', async () => {
     const user = userEvent.setup();
     render(<SearchBar />);

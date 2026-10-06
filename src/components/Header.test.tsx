@@ -103,6 +103,25 @@ describe('Header', () => {
       expect(document.getElementById('menu-mobile')).toBeNull();
     });
 
+    it('Escape di kolom cari menutup panel hasil dulu; Escape kedua baru menutup menu', async () => {
+      const user = userEvent.setup();
+      render(<Header />);
+
+      await user.click(screen.getByRole('button', { name: 'Buka menu' }));
+      const mobileMenu = document.getElementById('menu-mobile') as HTMLElement;
+      const input = within(mobileMenu).getByRole('textbox', { name: 'Cari artikel portofolio' });
+      await user.type(input, 'zzzxxx');
+      expect(await within(mobileMenu).findByText(/Tidak ada hasil untuk/)).toBeInTheDocument();
+
+      await user.keyboard('{Escape}');
+      expect(within(mobileMenu).queryByText(/Tidak ada hasil untuk/)).not.toBeInTheDocument();
+      expect(document.getElementById('menu-mobile')).not.toBeNull();
+      expect(input).toHaveValue('zzzxxx');
+
+      await user.keyboard('{Escape}');
+      expect(document.getElementById('menu-mobile')).toBeNull();
+    });
+
     it('ditutup otomatis setelah memilih menu, dan berpindah halaman', async () => {
       const user = userEvent.setup();
       render(<Header />);
