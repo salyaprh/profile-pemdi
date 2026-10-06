@@ -25,12 +25,12 @@ export interface Article {
 
 // Import article images (cycle through 1-6)
 // Using public paths in Vite
-const article1Image = '/assets/articles/article-1.png';
-const article2Image = '/assets/articles/article-2.png';
-const article3Image = '/assets/articles/article-3.png';
-const article4Image = '/assets/articles/article-4.png';
-const article5Image = '/assets/articles/article-5.png';
-const article6Image = '/assets/articles/article-6.png';
+const article1Image = '/images/articles/article-1.webp';
+const article2Image = '/images/articles/article-2.webp';
+const article3Image = '/images/articles/article-3.webp';
+const article4Image = '/images/articles/article-4.webp';
+const article5Image = '/images/articles/article-5.webp';
+const article6Image = '/images/articles/article-6.webp';
 
 const articleImages = [
   article1Image,
