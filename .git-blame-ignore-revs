@@ -1,0 +1,4 @@
+# Commit yang hanya memformat ulang kode, diabaikan oleh `git blame`.
+# GitHub membacanya otomatis. Secara lokal: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# Prettier: format satu kali jalan
+d901beece8a40df314e97bff7d72a319f49af458
