@@ -1,9 +1,4 @@
-import {
-  useMemo,
-  useSyncExternalStore,
-  type AnchorHTMLAttributes,
-  type MouseEvent,
-} from 'react';
+import { useMemo, useSyncExternalStore, type AnchorHTMLAttributes, type MouseEvent } from 'react';
 
 /**
  * Router minimal berbasis History API (tanpa dependency tambahan).
@@ -42,10 +37,7 @@ interface NavigateOptions {
   scroll?: boolean;
 }
 
-export function navigate(
-  to: string,
-  { replace = false, scroll = true }: NavigateOptions = {},
-) {
+export function navigate(to: string, { replace = false, scroll = true }: NavigateOptions = {}) {
   const current = window.location.pathname + window.location.search;
   if (to !== current) {
     window.history[replace ? 'replaceState' : 'pushState'](null, '', to);
@@ -60,9 +52,7 @@ export function useLocation() {
 
   return useMemo(() => {
     const queryStart = url.indexOf('?');
-    const pathname = normalizePathname(
-      queryStart === -1 ? url : url.slice(0, queryStart),
-    );
+    const pathname = normalizePathname(queryStart === -1 ? url : url.slice(0, queryStart));
     const search = queryStart === -1 ? '' : url.slice(queryStart);
     return { pathname, search, searchParams: new URLSearchParams(search) };
   }, [url]);

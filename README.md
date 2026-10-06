@@ -26,13 +26,13 @@ CI (`.github/workflows/ci.yml`) menjalankan `npm ci`, audit dependency produksi,
 
 ## Rute
 
-| Path | Halaman |
-|---|---|
-| `/` | Beranda |
-| `/portfolio` | Daftar portofolio. Filter dan halaman tersimpan di URL: `?kategori=Layanan+Publik&halaman=2` |
-| `/portfolio/:id` | Detail artikel + artikel terkait |
-| `/contact` | Formulir "Hubungi kami" |
-| lainnya | Halaman 404 (`noindex`) |
+| Path             | Halaman                                                                                      |
+| ---------------- | -------------------------------------------------------------------------------------------- |
+| `/`              | Beranda                                                                                      |
+| `/portfolio`     | Daftar portofolio. Filter dan halaman tersimpan di URL: `?kategori=Layanan+Publik&halaman=2` |
+| `/portfolio/:id` | Detail artikel + artikel terkait                                                             |
+| `/contact`       | Formulir "Hubungi kami"                                                                      |
+| lainnya          | Halaman 404 (`noindex`)                                                                      |
 
 ## Struktur
 
@@ -56,10 +56,10 @@ deploy/               nginx.conf.example (hosting sendiri/PDN)
 
 Salin `.env.example` menjadi `.env.local`. Semua variabel `VITE_*` **tertanam di bundle dan bersifat publik**: jangan menyimpan secret (API key, token) di sini.
 
-| Variabel | Fungsi |
-|---|---|
-| `VITE_SITE_URL` | URL produksi tanpa path (mis. `https://pemdi.panrb.go.id`). Mengaktifkan `canonical`, `og:url`, dan `sitemap.xml`. Atur di environment build **Production** hosting Anda. |
-| `VITE_CONTACT_ENDPOINT` | Endpoint `POST` JSON penerima pesan formulir kontak. |
+| Variabel                | Fungsi                                                                                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_SITE_URL`         | URL produksi tanpa path (mis. `https://pemdi.panrb.go.id`). Mengaktifkan `canonical`, `og:url`, dan `sitemap.xml`. Atur di environment build **Production** hosting Anda. |
+| `VITE_CONTACT_ENDPOINT` | Endpoint `POST` JSON penerima pesan formulir kontak.                                                                                                                      |
 
 ### Formulir kontak
 
@@ -80,12 +80,12 @@ Hasil build adalah situs statis (`dist/`). Persyaratan hosting:
 1. **SPA fallback**: path tak dikenal harus dilayani `index.html`.
 2. **Header keamanan** dari `public/_headers` (CSP ketat, HSTS, `nosniff`, `frame-ancestors 'none'`, dll.) dan cache panjang untuk `/assets/*`.
 
-| Hosting | Cara |
-|---|---|
+| Hosting                            | Cara                                                                                                                                                                                           |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Cloudflare Pages** (rekomendasi) | `public/_headers` terbaca otomatis. SPA fallback bawaan **selama tidak ada `404.html` di root** (jangan menambahkannya, dan tidak perlu `_redirects`). Build: `npm run build`, output: `dist`. |
-| **Netlify** | `_headers` terbaca otomatis; tambahkan `public/_redirects` berisi `/* /index.html 200`. |
-| **Vercel** | Terjemahkan isi `_headers` ke `vercel.json` (`headers`) dan tambahkan `rewrites` ke `/index.html`. |
-| **Server sendiri / PDN** | Lihat `deploy/nginx.conf.example` (belum diuji di server nyata). |
+| **Netlify**                        | `_headers` terbaca otomatis; tambahkan `public/_redirects` berisi `/* /index.html 200`.                                                                                                        |
+| **Vercel**                         | Terjemahkan isi `_headers` ke `vercel.json` (`headers`) dan tambahkan `rewrites` ke `/index.html`.                                                                                             |
+| **Server sendiri / PDN**           | Lihat `deploy/nginx.conf.example` (belum diuji di server nyata).                                                                                                                               |
 
 Catatan:
 

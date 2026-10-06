@@ -16,9 +16,7 @@ export default defineConfig(({ mode }) => {
       selfHostFonts(),
       seo({
         siteUrl: env.VITE_SITE_URL,
-        articlesFile: fileURLToPath(
-          new URL('./src/data/articlesData.ts', import.meta.url),
-        ),
+        articlesFile: fileURLToPath(new URL('./src/data/articlesData.ts', import.meta.url)),
       }),
     ],
   };

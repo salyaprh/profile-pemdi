@@ -13,10 +13,7 @@ interface ErrorBoundaryState {
  * Fallback sengaja tidak bergantung pada router/provider apa pun
  * (memakai <a href> dan reload penuh) supaya tetap tampil bila itu yang rusak.
  */
-export default class ErrorBoundary extends Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
-> {
+export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(): ErrorBoundaryState {
@@ -40,8 +37,8 @@ export default class ErrorBoundary extends Component<
         <div className="flex max-w-md flex-col gap-2">
           <h1 className="text-h5 font-semibold">Halaman ini sedang bermasalah</h1>
           <p className="text-body-sm text-content-secondary">
-            Maaf, terjadi gangguan saat menampilkan halaman. Silakan muat ulang
-            halaman atau kembali ke beranda.
+            Maaf, terjadi gangguan saat menampilkan halaman. Silakan muat ulang halaman atau kembali
+            ke beranda.
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-3">

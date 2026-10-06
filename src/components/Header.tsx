@@ -28,7 +28,11 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-stroke-primary bg-background-primary/95 backdrop-blur">
       <div className="mx-auto flex h-[72px] max-w-[1240px] items-center justify-between gap-6 px-5 lg:px-8">
-        <Link to={paths.home} className="flex shrink-0 items-center gap-3 rounded" aria-label={`${siteName}, ke beranda`}>
+        <Link
+          to={paths.home}
+          className="flex shrink-0 items-center gap-3 rounded"
+          aria-label={`${siteName}, ke beranda`}
+        >
           <img src="/panrb.svg" alt="" className="h-10 w-auto" />
           <span className="hidden border-l border-stroke-primary pl-3 text-caption font-bold leading-tight text-content-primary sm:block">
             PEMDI <span className="font-normal text-primary-600">PANRB</span>
@@ -39,7 +43,12 @@ export default function Header() {
           {navigationItems.map((item) => {
             const active = item.isActive(pathname);
             return (
-              <Link key={item.to} to={item.to} aria-current={active ? 'page' : undefined} className={navLinkClass(active)}>
+              <Link
+                key={item.to}
+                to={item.to}
+                aria-current={active ? 'page' : undefined}
+                className={navLinkClass(active)}
+              >
                 {item.label}
               </Link>
             );
@@ -58,12 +67,19 @@ export default function Header() {
           aria-controls="menu-mobile"
           aria-label={isMenuOpen ? 'Tutup menu' : 'Buka menu'}
         >
-          {isMenuOpen ? <IconX size={22} aria-hidden="true" /> : <IconMenu2 size={22} aria-hidden="true" />}
+          {isMenuOpen ? (
+            <IconX size={22} aria-hidden="true" />
+          ) : (
+            <IconMenu2 size={22} aria-hidden="true" />
+          )}
         </button>
       </div>
 
       {isMenuOpen && (
-        <div id="menu-mobile" className="border-t border-stroke-primary bg-background-primary px-5 py-4 md:hidden">
+        <div
+          id="menu-mobile"
+          className="border-t border-stroke-primary bg-background-primary px-5 py-4 md:hidden"
+        >
           <nav className="flex flex-col gap-1" aria-label="Navigasi mobile">
             {navigationItems.map((item) => {
               const active = item.isActive(pathname);

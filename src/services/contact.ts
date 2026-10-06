@@ -14,9 +14,7 @@ export type SendResult = 'sent' | 'not-configured';
 
 const endpoint = import.meta.env.VITE_CONTACT_ENDPOINT?.trim();
 
-export async function sendContactMessage(
-  payload: ContactMessage,
-): Promise<SendResult> {
+export async function sendContactMessage(payload: ContactMessage): Promise<SendResult> {
   if (!endpoint) {
     if (import.meta.env.DEV) {
       console.warn(

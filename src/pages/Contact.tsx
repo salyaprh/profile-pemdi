@@ -83,9 +83,7 @@ export default function Contact() {
 
     const firstInvalid = fieldOrder.find((field) => nextErrors[field]);
     if (firstInvalid) {
-      formRef.current
-        ?.querySelector<HTMLElement>(`[name="${firstInvalid}"]`)
-        ?.focus();
+      formRef.current?.querySelector<HTMLElement>(`[name="${firstInvalid}"]`)?.focus();
       return;
     }
 

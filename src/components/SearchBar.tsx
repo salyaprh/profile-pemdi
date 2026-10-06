@@ -77,8 +77,12 @@ export default function SearchBar({ className, onSelect }: SearchBarProps) {
                     onNavigate={close}
                     className="block rounded-lg px-2 py-2 hover:bg-background-tertiary"
                   >
-                    <span className="line-clamp-2 block text-caption font-medium text-content-primary">{article.title}</span>
-                    <span className="text-caption-sm text-content-secondary">{article.category}</span>
+                    <span className="line-clamp-2 block text-caption font-medium text-content-primary">
+                      {article.title}
+                    </span>
+                    <span className="text-caption-sm text-content-secondary">
+                      {article.category}
+                    </span>
                   </Link>
                 </li>
               ))}

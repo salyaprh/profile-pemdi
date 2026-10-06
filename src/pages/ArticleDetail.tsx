@@ -53,8 +53,12 @@ export default function ArticleDetail({ articleId }: ArticleDetailProps) {
         <header className="space-y-3 lg:space-y-4">
           <p className="text-caption font-bold text-primary-600">{article.category}</p>
           <div>
-            <p className="text-caption-sm text-content-secondary">{getReadingMinutes(article)} menit baca</p>
-            <h1 className="mt-1 text-h4 font-semibold text-content-primary lg:text-h2">{article.title}</h1>
+            <p className="text-caption-sm text-content-secondary">
+              {getReadingMinutes(article)} menit baca
+            </p>
+            <h1 className="mt-1 text-h4 font-semibold text-content-primary lg:text-h2">
+              {article.title}
+            </h1>
           </div>
           <p className="text-body-sm text-content-secondary lg:text-body">{article.excerpt}</p>
           <p className="text-caption-sm text-content-secondary">
@@ -78,13 +82,18 @@ export default function ArticleDetail({ articleId }: ArticleDetailProps) {
             className="h-auto w-full rounded-lg"
           />
           {article.source && (
-            <figcaption className="text-caption-sm text-content-secondary">Sumber: {article.source}</figcaption>
+            <figcaption className="text-caption-sm text-content-secondary">
+              Sumber: {article.source}
+            </figcaption>
           )}
         </figure>
 
         <div className="space-y-4">
           {getArticleContent(article).map((paragraph, index) => (
-            <p key={index} className="text-body-sm leading-relaxed text-content-primary lg:text-body">
+            <p
+              key={index}
+              className="text-body-sm leading-relaxed text-content-primary lg:text-body"
+            >
               {paragraph}
             </p>
           ))}
@@ -92,7 +101,10 @@ export default function ArticleDetail({ articleId }: ArticleDetailProps) {
       </div>
 
       {related.length > 0 && (
-        <section className="mt-12 space-y-6 border-t border-stroke-primary pt-8 lg:mt-16" aria-labelledby="judul-terkait">
+        <section
+          className="mt-12 space-y-6 border-t border-stroke-primary pt-8 lg:mt-16"
+          aria-labelledby="judul-terkait"
+        >
           <div className="flex items-center justify-between gap-4">
             <h2 id="judul-terkait" className="text-body font-semibold text-content-primary">
               Artikel terkait

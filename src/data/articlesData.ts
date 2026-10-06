@@ -1,9 +1,6 @@
 // Data dummy artikel/portofolio. Gambar disajikan dari folder `public`.
 
-export type ArticleCategory =
-  | 'Layanan Publik'
-  | 'Kebijakan & Regulasi'
-  | 'Panduan Pengguna';
+export type ArticleCategory = 'Layanan Publik' | 'Kebijakan & Regulasi' | 'Panduan Pengguna';
 
 /** Nilai filter kategori di halaman Portofolio ('Semua' = tanpa filter). */
 export type CategoryFilter = 'Semua' | ArticleCategory;
@@ -310,8 +307,7 @@ export const articles: Article[] = [
   {
     id: '27',
     title: 'Tutorial: Menggunakan Fitur Bookmark Artikel',
-    excerpt:
-      'Pelajari cara menyimpan artikel favorit Anda untuk dibaca kembali di kemudian hari.',
+    excerpt: 'Pelajari cara menyimpan artikel favorit Anda untuk dibaca kembali di kemudian hari.',
     author: 'Haechal',
     date: '2024-11-18',
     category: 'Panduan Pengguna',

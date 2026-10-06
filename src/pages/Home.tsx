@@ -13,17 +13,26 @@ export default function Home() {
   return (
     <>
       <section className="relative overflow-hidden bg-primary-900 text-white">
-        <div className="absolute inset-0 bg-linear-to-br from-primary-900 via-primary-800 to-primary-600" aria-hidden="true" />
-        <div className="absolute -right-24 -top-24 size-[28rem] rounded-full bg-primary-400/25 blur-3xl" aria-hidden="true" />
+        <div
+          className="absolute inset-0 bg-linear-to-br from-primary-900 via-primary-800 to-primary-600"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute -right-24 -top-24 size-[28rem] rounded-full bg-primary-400/25 blur-3xl"
+          aria-hidden="true"
+        />
 
         <div className="relative mx-auto grid max-w-[1240px] items-center gap-12 px-5 py-16 sm:py-20 lg:grid-cols-[1.08fr_0.92fr] lg:px-8 lg:py-28">
           <div className="max-w-[650px]">
-            <p className="mb-6 text-caption font-bold tracking-wide text-primary-200">Pemerintah Digital · PANRB</p>
+            <p className="mb-6 text-caption font-bold tracking-wide text-primary-200">
+              Pemerintah Digital · PANRB
+            </p>
             <h1 className="text-h3 font-bold sm:text-display-sm lg:text-display-lg">
               Transformasi digital pemerintah untuk Indonesia yang lebih maju.
             </h1>
             <p className="mt-6 max-w-[560px] text-body-sm text-primary-50 sm:text-body">
-              PEMDI merangkum karya dan inisiatif TDP dalam membangun layanan pemerintah yang terintegrasi, berdampak, dan berpusat pada kebutuhan masyarakat.
+              PEMDI merangkum karya dan inisiatif TDP dalam membangun layanan pemerintah yang
+              terintegrasi, berdampak, dan berpusat pada kebutuhan masyarakat.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <ButtonLink to={paths.portfolio} hierarchy="light" size="xl">

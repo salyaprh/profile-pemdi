@@ -42,10 +42,7 @@ export function seo({ siteUrl, articlesFile }: SeoOptions): Plugin {
         );
       }
 
-      const paths = [
-        ...staticPaths,
-        ...ids.map((id) => `/portfolio/${encodeURIComponent(id)}`),
-      ];
+      const paths = [...staticPaths, ...ids.map((id) => `/portfolio/${encodeURIComponent(id)}`)];
       const urls = paths.map((path) => `  <url><loc>${base}${path}</loc></url>`);
       this.emitFile({
         type: 'asset',
