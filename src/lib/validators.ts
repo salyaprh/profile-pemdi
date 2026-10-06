@@ -23,11 +23,20 @@ export function validateEmail(email: string): ValidationResult {
   return valid;
 }
 
+const cleanPhone = (phone: string) => phone.replace(/[\s\-()]/g, '');
+
+/**
+ * `PhoneInput` mengisi kode negara otomatis (mis. "+62"). Nilai dengan paling banyak 3 angka
+ * dianggap belum ada nomor yang diketik, sehingga tidak divalidasi dan tidak dikirim.
+ */
+export function isEmptyPhone(phone: string): boolean {
+  return /^\+?\d{0,3}$/.test(cleanPhone(phone));
+}
+
 /** Nomor ponsel bersifat opsional; nilai kosong atau hanya kode negara dianggap valid. */
 export function validateOptionalPhone(phone: string): ValidationResult {
-  const cleaned = phone.replace(/[\s\-()]/g, '');
-  if (!cleaned || /^\+?\d{1,3}$/.test(cleaned)) return valid;
-  if (!/^\+?\d{10,15}$/.test(cleaned)) {
+  if (isEmptyPhone(phone)) return valid;
+  if (!/^\+?\d{10,15}$/.test(cleanPhone(phone))) {
     return invalid('Nomor ponsel harus 10-15 digit angka');
   }
   return valid;

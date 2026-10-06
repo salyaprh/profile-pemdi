@@ -4,6 +4,7 @@ import { paths } from '../lib/router';
 import { usePageMeta } from '../lib/seo';
 import {
   MESSAGE_MAX_LENGTH,
+  isEmptyPhone,
   validateEmail,
   validateMessage,
   validateName,
@@ -50,9 +51,7 @@ export default function Contact() {
   const [isSending, setIsSending] = useState(false);
 
   const hasValue = (field: FieldName) =>
-    field === 'phone'
-      ? values.phone.replace(/\D/g, '').length > 3
-      : values[field].trim().length > 0;
+    field === 'phone' ? !isEmptyPhone(values.phone) : values[field].trim().length > 0;
 
   const statusOf = (field: FieldName) => {
     if (errors[field]) return 'error' as const;
@@ -89,7 +88,11 @@ export default function Contact() {
 
     setIsSending(true);
     try {
-      const result = await sendContactMessage(values);
+      const result = await sendContactMessage({
+        ...values,
+        // Hanya kode negara (mis. "+62") berarti tidak ada nomor.
+        phone: isEmptyPhone(values.phone) ? '' : values.phone,
+      });
       if (result === 'sent') {
         toast({
           title: 'Pesan terkirim',
