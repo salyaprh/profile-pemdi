@@ -36,6 +36,8 @@ export default function ButtonLink({
   ...props
 }: ButtonLinkProps) {
   return (
+    // Isi tautan datang lewat {...props} (children), yang tidak terlihat oleh linter.
+    // eslint-disable-next-line jsx-a11y/anchor-has-content
     <Link
       className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors ${hierarchyClass[hierarchy]} ${sizeClass[size]} ${className}`}
       {...props}

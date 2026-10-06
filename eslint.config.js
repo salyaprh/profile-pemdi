@@ -1,0 +1,61 @@
+import js from '@eslint/js';
+import { defineConfig, globalIgnores } from 'eslint/config';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import reactHooks from 'eslint-plugin-react-hooks';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
+export default defineConfig([
+  globalIgnores(['dist', 'coverage', 'playwright-report', 'test-results']),
+
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommendedTypeChecked,
+      reactHooks.configs.flat.recommended,
+      jsxA11y.flatConfigs.recommended,
+    ],
+    languageOptions: {
+      globals: globals.browser,
+      parserOptions: {
+        project: ['./tsconfig.json', './tsconfig.node.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    settings: {
+      // Komponen pembungkus <a>: aturan tautan jsx-a11y ikut memeriksanya.
+      'jsx-a11y': { components: { Link: 'a', ButtonLink: 'a' } },
+    },
+    rules: {
+      // <Link> memakai prop `to` (bukan `href`); tetap diperiksa sebagai tautan.
+      'jsx-a11y/anchor-is-valid': [
+        'error',
+        { components: ['Link', 'ButtonLink'], specialLink: ['to'] },
+      ],
+      // Handler async pada prop JSX (mis. onSubmit) sudah umum dan aman di React.
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        { checksVoidReturn: { attributes: false } },
+      ],
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
+      ],
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+    },
+  },
+
+  // Kode sisi build (Node)
+  {
+    files: ['vite.config.ts', 'vite-plugins/**/*.ts'],
+    languageOptions: { globals: globals.node },
+  },
+
+  // Berkas konfigurasi JS biasa: tanpa aturan berbasis tipe.
+  {
+    files: ['**/*.{js,mjs}'],
+    extends: [js.configs.recommended],
+    languageOptions: { globals: globals.node },
+  },
+]);
