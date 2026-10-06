@@ -1,5 +1,46 @@
 /* Tailwind CSS v4 */
 @import 'tailwindcss';
 
+/* Token warna INA Digital Design System + brand PANRB */
 @import '@idds/styles/tailwind/css/idds.css';
 @import '@idds/styles/tailwind/css/panrb.css';
+
+/*
+ * Skala tipografi IDDS (https://design.inadigital.go.id/foundation/typography/)
+ * Font utama Inter sudah dimuat oleh @idds/react/index.css.
+ */
+@theme {
+  --text-display-lg: 3.25rem;
+  --text-display-lg--line-height: 3.5rem;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-sm: 2.75rem;
+  --text-display-sm--line-height: 3rem;
+  --text-display-sm--letter-spacing: -0.02em;
+  --text-h1: 2.5rem;
+  --text-h1--line-height: 3rem;
+  --text-h2: 2.25rem;
+  --text-h2--line-height: 2.75rem;
+  --text-h3: 2rem;
+  --text-h3--line-height: 2.5rem;
+  --text-h4: 1.75rem;
+  --text-h4--line-height: 2.25rem;
+  --text-h5: 1.5rem;
+  --text-h5--line-height: 2rem;
+  --text-body-lg: 1.25rem;
+  --text-body-lg--line-height: 1.75rem;
+  --text-body: 1.125rem;
+  --text-body--line-height: 1.625rem;
+  --text-body-sm: 1rem;
+  --text-body-sm--line-height: 1.5rem;
+  --text-caption: 0.875rem;
+  --text-caption--line-height: 1.25rem;
+  --text-caption-sm: 0.75rem;
+  --text-caption-sm--line-height: 1rem;
+}
+
+/* Fokus keyboard yang konsisten dan terlihat (WCAG 2.2 AA) */
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-guide-500);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}

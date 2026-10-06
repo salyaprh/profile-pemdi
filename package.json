@@ -1,5 +1,5 @@
 {
-  "name": "idds-react-starter",
+  "name": "profile-pemdi",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -9,11 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@idds/react": "latest",
+    "@idds/react": "^1.6.60",
     "@tabler/icons-react": "^3.0.0",
-    "apexcharts": "^4.3.0",
     "react": "^19.1.0",
-    "react-apexcharts": "^1.7.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {

@@ -1,136 +1,123 @@
-import { useState, useMemo } from 'react';
-import { Card, Pagination, Chip } from '@idds/react';
+import { useMemo } from 'react';
+import { Chip, Pagination } from '@idds/react';
+import ArticleCard from '../components/ArticleCard';
+import ButtonLink from '../components/ButtonLink';
+import EmptyState from '../components/EmptyState';
 import {
   articles,
   categoryOptions,
-  type ArticleCategory,
+  isCategoryFilter,
+  type CategoryFilter,
 } from '../data/articlesData';
-import ArticleDetail from './ArticleDetail';
+import { navigate, paths, useLocation, usePageTitle } from '../lib/router';
 
+const PAGE_SIZE = 12;
+
+function buildUrl(category: CategoryFilter, page: number) {
+  const params = new URLSearchParams();
+  if (category !== 'Semua') params.set('kategori', category);
+  if (page > 1) params.set('halaman', String(page));
+  const query = params.toString();
+  return query ? `${paths.portfolio}?${query}` : paths.portfolio;
+}
+
+/**
+ * Daftar portofolio. Kategori dan halaman disimpan di URL
+ * (?kategori=...&halaman=...) agar tombol Back dan tautan langsung berfungsi.
+ */
 export default function Articles() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(12); // Fixed 12 items per page
-  const [selectedCategory, setSelectedCategory] =
-    useState<ArticleCategory>('Semua');
-  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(
-    null,
+  usePageTitle('Portofolio');
+  const { searchParams } = useLocation();
+
+  const categoryParam = searchParams.get('kategori');
+  const selectedCategory: CategoryFilter = isCategoryFilter(categoryParam)
+    ? categoryParam
+    : 'Semua';
+
+  const filteredArticles = useMemo(
+    () =>
+      selectedCategory === 'Semua'
+        ? articles
+        : articles.filter((article) => article.category === selectedCategory),
+    [selectedCategory],
   );
 
-  // Filter articles by category
-  const filteredArticles = useMemo(() => {
-    if (selectedCategory === 'Semua') {
-      return articles;
-    }
-    return articles.filter((article) => article.category === selectedCategory);
-  }, [selectedCategory]);
+  const totalPages = Math.max(1, Math.ceil(filteredArticles.length / PAGE_SIZE));
+  const requestedPage = Math.floor(Number(searchParams.get('halaman'))) || 1;
+  const currentPage = Math.min(Math.max(1, requestedPage), totalPages);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const currentArticles = filteredArticles.slice(startIndex, startIndex + PAGE_SIZE);
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredArticles.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const currentArticles = useMemo(
-    () => filteredArticles.slice(startIndex, endIndex),
-    [filteredArticles, startIndex, endIndex],
-  );
+  const handleCategoryChange = (value: string | string[]) => {
+    const next = Array.isArray(value) ? value[0] : value;
+    navigate(buildUrl(isCategoryFilter(next) ? next : 'Semua', 1), { scroll: false });
+  };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate(buildUrl(selectedCategory, page));
   };
-
-  const handleCategoryChange = (category: string | string[]) => {
-    const selectedCategory = Array.isArray(category) ? category[0] : category;
-    setSelectedCategory(selectedCategory as ArticleCategory);
-    setCurrentPage(1); // Reset to first page when category changes
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setCurrentPage(1); // Reset to first page when page size changes
-  };
-
-  const handleArticleClick = (articleId: string) => {
-    setSelectedArticleId(articleId);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleBack = () => {
-    setSelectedArticleId(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  if (selectedArticleId) {
-    return <ArticleDetail articleId={selectedArticleId} onBack={handleBack} />;
-  }
 
   return (
     <div className="mx-auto w-full max-w-[1240px] px-5 py-8 sm:px-6 lg:px-8 lg:py-12">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#002A69] md:text-3xl">
+      <div className="mb-8 space-y-2">
+        <h1 className="text-h5 font-bold text-content-primary lg:text-h3">
           Portofolio Pemerintah Digital
         </h1>
-        <p className="mb-6 mt-2 text-sm text-[#0B2148]/75 md:text-base">
+        <p className="text-body-sm text-content-secondary">
           Jelajahi kabar, wawasan, dan dokumentasi inisiatif Pemerintah Digital.
         </p>
-
-        {/* Category Filter */}
-        <div className="mb-8">
-          <Chip
-            options={categoryOptions}
-            selected={selectedCategory}
-            onSelect={handleCategoryChange}
-            showCustomization={false}
-            variant="outline"
-            size="medium"
-            className="[&_.ina-chip__list]:flex-wrap [&_.ina-chip__list]:gap-2"
-            selectedColor="#0968F6"
-            selectedChipClassName="!bg-[#D4E5FE]"
-          />
-        </div>
       </div>
 
-      {/* Articles Grid - 3 columns on desktop */}
-      <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-        {currentArticles.map((article) => (
-          <div
-            key={article.id}
-            onClick={() => handleArticleClick(article.id)}
-            className="h-[330px] w-full cursor-pointer [&_.ina-card]:h-full [&_.ina-card]:w-full"
-          >
-            <Card
-              variant="basic"
-              mediaPosition="top"
-              title={
-                <span className="line-clamp-1 text-base font-semibold text-[#0B2148] md:text-lg">
-                  {article.title}
-                </span>
-              }
-              description={
-                <span className="line-clamp-2 text-sm text-[#0B2148]/75 md:text-base">
-                  {article.excerpt}
-                </span>
-              }
-              mediaSrc={article.mediaSrc}
-              mediaAlt={article.title}
-              clickable={true}
-              hoverable={true}
-            />
-          </div>
-        ))}
+      <div className="mb-8">
+        <Chip
+          options={categoryOptions}
+          selected={selectedCategory}
+          onSelect={handleCategoryChange}
+          showCustomization={false}
+          variant="outline"
+          size="medium"
+          className="[&_.ina-chip__list]:flex-wrap [&_.ina-chip__list]:gap-2"
+          selectedColor="var(--color-primary-600)"
+          selectedChipClassName="!bg-primary-50"
+        />
       </div>
 
-      {/* Pagination */}
-      {totalPages > 0 && (
+      <p className="mb-4 text-caption text-content-secondary" role="status">
+        {filteredArticles.length > 0
+          ? `Menampilkan ${startIndex + 1}-${startIndex + currentArticles.length} dari ${filteredArticles.length} artikel`
+          : 'Tidak ada artikel'}
+      </p>
+
+      {currentArticles.length > 0 ? (
+        <ul className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+          {currentArticles.map((article) => (
+            <li key={article.id}>
+              <ArticleCard article={article} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <EmptyState
+          title="Belum ada artikel di kategori ini"
+          description="Coba pilih kategori lain atau tampilkan semua artikel."
+          action={
+            <ButtonLink to={paths.portfolio} hierarchy="secondary">
+              Tampilkan semua artikel
+            </ButtonLink>
+          }
+        />
+      )}
+
+      {totalPages > 1 && (
         <div className="mt-6 md:mt-8">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            pageSize={pageSize}
-            pageSizeOptions={[12]}
+            pageSize={PAGE_SIZE}
+            pageSizeOptions={[PAGE_SIZE]}
             onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-            fullWidth={true}
+            onPageSizeChange={() => {}}
+            fullWidth
           />
         </div>
       )}

@@ -1,150 +1,101 @@
-import { useMemo } from 'react';
-import { articles } from '../data/articlesData';
+import { Avatar, Breadcrumb } from '@idds/react';
+import { IconArrowRight } from '@tabler/icons-react';
+import ArticleCard from '../components/ArticleCard';
+import ButtonLink from '../components/ButtonLink';
+import {
+  getArticleById,
+  getArticleContent,
+  getReadingMinutes,
+  getRelatedArticles,
+} from '../data/articlesData';
+import { formatDate } from '../lib/format';
+import { navigate, paths, usePageTitle } from '../lib/router';
+import NotFound from './NotFound';
 
 interface ArticleDetailProps {
   articleId: string;
-  onBack: () => void;
 }
 
-export default function ArticleDetail({
-  articleId,
-  onBack,
-}: ArticleDetailProps) {
-  const article = useMemo(() => {
-    return articles.find((a) => a.id === articleId);
-  }, [articleId]);
+/** Pola Blog Post IDDS: header artikel, isi, lalu "Artikel terkait". */
+export default function ArticleDetail({ articleId }: ArticleDetailProps) {
+  const article = getArticleById(articleId);
+  usePageTitle(article?.title ?? 'Artikel tidak ditemukan');
 
   if (!article) {
     return (
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-[720px] md:p-6">
-          <div className="text-center py-12">
-            <h1 className="text-2xl md:text-3xl font-semibold text-content-primary mb-4">
-              Artikel Tidak Ditemukan
-            </h1>
-            <p className="text-content-secondary mb-6">
-              Artikel dengan ID "{articleId}" tidak ditemukan.
-            </p>
-            <button
-              onClick={onBack}
-              className="text-[#0968F6] hover:text-[#0049B8] underline"
-            >
-              Kembali ke Daftar Artikel
-            </button>
-          </div>
-        </div>
-      </div>
+      <NotFound
+        title="Artikel tidak ditemukan"
+        description="Maaf, artikel yang Anda cari tidak tersedia. Artikel tersebut mungkin telah dipindahkan atau dihapus."
+      />
     );
   }
 
-  // Format date
-  const formattedDate = new Date(article.date).toLocaleDateString('id-ID', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const related = getRelatedArticles(article);
+  const categoryUrl = `${paths.portfolio}?kategori=${encodeURIComponent(article.category)}`;
 
   return (
-    <div className="w-full flex justify-center">
-      <div className="w-full max-w-[720px] md:p-6">
-        {/* Back Button */}
-        <button
-          onClick={onBack}
-          className="inline-flex items-center text-xs sm:text-sm text-content-secondary hover:text-content-primary mb-6"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="mr-2"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          Kembali
-        </button>
+    <article className="mx-auto w-full max-w-[1240px] px-5 py-8 sm:px-6 lg:px-8 lg:py-12">
+      <div className="mx-auto flex max-w-[720px] flex-col gap-6 lg:gap-8">
+        <Breadcrumb
+          maxLength={24}
+          items={[
+            { label: 'Beranda', onClick: () => navigate(paths.home) },
+            { label: 'Portofolio', onClick: () => navigate(paths.portfolio) },
+            { label: article.title },
+          ]}
+        />
 
-        {/* Article Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-content-primary mb-4">
-            {article.title}
-          </h1>
-          <p className="text-base md:text-lg text-content-secondary mb-4">
-            {article.excerpt}
-          </p>
-          <div className="flex flex-col sm:flex-row sm:items-center space-x-2 space-y-2 sm:space-y-0">
-            <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 text-xs md:text-sm text-content-secondary">
-              <span>{article.author}</span>
-              <span>•</span>
-              <span>{formattedDate}</span>
-              <span className="hidden sm:inline">•</span>
-            </div>
-            <div className="px-2 sm:px-3 py-1 bg-[#D4E5FE] text-[#0049B8] rounded-full text-xs font-medium w-fit">
-              {article.category}
-            </div>
+        <header className="space-y-3 lg:space-y-4">
+          <p className="text-caption font-bold text-primary-600">{article.category}</p>
+          <div>
+            <p className="text-caption-sm text-content-secondary">{getReadingMinutes(article)} menit baca</p>
+            <h1 className="mt-1 text-h4 font-semibold text-content-primary lg:text-h2">{article.title}</h1>
           </div>
-        </div>
+          <p className="text-body-sm text-content-secondary lg:text-body">{article.excerpt}</p>
+          <p className="text-caption-sm text-content-secondary">
+            <time dateTime={article.date}>{formatDate(article.date)}</time>
+          </p>
+          <div className="flex items-center gap-2">
+            <Avatar initials={article.author.slice(0, 2).toUpperCase()} alt="" />
+            <span className="text-body-sm text-content-primary">{article.author}</span>
+          </div>
+        </header>
 
-        {/* Article Image */}
-        {article.mediaSrc && (
-          <div className="mb-8">
-            <img
-              src={article.mediaSrc}
-              alt={article.title}
-              className="w-full h-auto rounded-lg"
-            />
-            <p className="text-[10px] sm:text-xs text-content-secondary mt-2">
-              Sumber: inadigitalnews.com
+        <figure className="space-y-2">
+          <img src={article.mediaSrc} alt={article.title} className="h-auto w-full rounded-lg" />
+          {article.source && (
+            <figcaption className="text-caption-sm text-content-secondary">Sumber: {article.source}</figcaption>
+          )}
+        </figure>
+
+        <div className="space-y-4">
+          {getArticleContent(article).map((paragraph, index) => (
+            <p key={index} className="text-body-sm leading-relaxed text-content-primary lg:text-body">
+              {paragraph}
             </p>
-          </div>
-        )}
-
-        {/* Article Content */}
-        <div className="prose prose-lg max-w-none">
-          <p className="text-sm sm:text-base lg:text-lg text-content-primary leading-relaxed mb-4">
-            <b>Jakarta</b> — Pemerintah terus mendorong percepatan transformasi
-            digital di lingkungan Aparatur Sipil Negara (ASN) melalui penguatan
-            integrasi layanan dalam platform INAgov.
-          </p>
-          <p className="text-sm sm:text-base lg:text-lg text-content-primary leading-relaxed mb-4">
-            Kementerian Pendayagunaan Aparatur Negara dan Reformasi Birokrasi
-            (KemenPANRB) menyatakan bahwa integrasi berbagai layanan ASN ke
-            dalam satu portal bertujuan untuk mengurangi fragmentasi sistem yang
-            selama ini menghambat efisiensi kerja.
-          </p>
-          <p className="text-sm sm:text-base lg:text-lg text-content-primary leading-relaxed mb-4">
-            "Selama ini ASN harus berpindah-pindah platform untuk mengakses
-            layanan yang berbeda. Dengan INAgov, kami ingin menghadirkan
-            pengalaman yang lebih sederhana, konsisten, dan efisien," ujar
-            perwakilan KemenPANRB dalam keterangan resminya.
-          </p>
-          <p className="text-sm sm:text-base lg:text-lg text-content-primary leading-relaxed mb-4">
-            Integrasi ini mencakup layanan informasi kepegawaian, pengembangan
-            kompetensi, akses kebijakan terbaru, dan berbagai layanan
-            administratif lainnya. Melalui platform terpadu ini, diharapkan ASN
-            dapat menghemat waktu dan meningkatkan produktivitas kerja.
-          </p>
-          <p className="text-sm sm:text-base lg:text-lg text-content-primary leading-relaxed mb-4">
-            Selain efisiensi, penguatan INAgov juga diharapkan dapat
-            meningkatkan transparansi dan akuntabilitas dalam penyelenggaraan
-            pemerintahan. Semua informasi dan layanan yang tersedia di platform
-            ini dapat diakses dengan mudah oleh seluruh ASN di seluruh
-            Indonesia.
-          </p>
-          <p className="text-sm sm:text-base lg:text-lg text-content-primary leading-relaxed">
-            Ke depan, pemerintah berencana untuk terus mengembangkan fitur
-            INAgov dengan menambahkan lebih banyak layanan dan meningkatkan
-            kualitas konten informasi yang tersedia. Langkah ini merupakan
-            bagian dari komitmen pemerintah dalam mempercepat transformasi
-            digital sektor publik.
-          </p>
+          ))}
         </div>
       </div>
-    </div>
+
+      {related.length > 0 && (
+        <section className="mt-12 space-y-6 border-t border-stroke-primary pt-8 lg:mt-16" aria-labelledby="judul-terkait">
+          <div className="flex items-center justify-between gap-4">
+            <h2 id="judul-terkait" className="text-body font-semibold text-content-primary">
+              Artikel terkait
+            </h2>
+            <ButtonLink to={categoryUrl} hierarchy="tertiary">
+              Lihat semua <IconArrowRight size={16} aria-hidden="true" />
+            </ButtonLink>
+          </div>
+          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+            {related.map((item) => (
+              <li key={item.id}>
+                <ArticleCard article={item} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </article>
   );
 }
