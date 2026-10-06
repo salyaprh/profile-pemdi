@@ -1,0 +1,5 @@
+/* Tailwind CSS v4 */
+@import 'tailwindcss';
+
+@import '@idds/styles/tailwind/css/idds.css';
+@import '@idds/styles/tailwind/css/panrb.css';
