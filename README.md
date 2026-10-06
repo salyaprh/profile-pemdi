@@ -12,7 +12,7 @@ Situs profil PEMDI / PANRB (Pemerintah Digital) yang menampilkan karya dan inisi
 
 ## Menjalankan
 
-Butuh Node.js 18 atau lebih baru.
+Butuh Node.js 20.19+ atau 22.12+ (syarat Vite 7).
 
 ```bash
 npm install
