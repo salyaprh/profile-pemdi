@@ -1,9 +1,9 @@
 /* Tailwind CSS v4 */
 @import 'tailwindcss';
 
-/* Token warna INA Digital Design System + brand PANRB */
+/* Token warna INA Digital Design System + brand INAgov (kebiruan sesuai IDDS & eval.spbe.go.id) */
 @import '@idds/styles/tailwind/css/idds.css';
-@import '@idds/styles/tailwind/css/panrb.css';
+@import '@idds/styles/tailwind/css/inagov.css';
 
 /*
  * Skala tipografi IDDS (https://design.inadigital.go.id/foundation/typography/)
@@ -49,6 +49,20 @@
   100% {
     transform: translateX(100%);
   }
+}
+
+/*
+ * Accordion IDDS hanya menutup konten dengan max-height:0 + opacity:0, sehingga tautan di dalamnya
+ * tetap dapat difokus lewat Tab saat tertutup (fokus mendarat pada elemen tak terlihat, WCAG 2.4.7).
+ * visibility:hidden mengeluarkannya dari urutan Tab dan pohon aksesibilitas. Jeda 0.3s pada aturan
+ * tertutup menyamai animasi IDDS sehingga animasi tutup tetap terlihat; saat dibuka langsung tampil.
+ */
+.ina-accordion__content:not(.ina-accordion__content--open) {
+  visibility: hidden;
+  transition:
+    max-height 0.3s ease,
+    opacity 0.3s ease,
+    visibility 0s linear 0.3s;
 }
 
 /* Fokus keyboard yang konsisten dan terlihat (WCAG 2.2 AA) */

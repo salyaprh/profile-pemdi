@@ -12,7 +12,7 @@ import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 
 // Brand theme IDDS: 'inagov' | 'panrb' | 'bkn' | 'lan' | 'bgn' | 'default'
-setBrandTheme('panrb');
+setBrandTheme('inagov');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
