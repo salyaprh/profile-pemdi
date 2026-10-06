@@ -28,9 +28,8 @@ export default function SearchBar({ className, onSelect }: SearchBarProps) {
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Escape') {
-      setOpen(false);
-    } else if (event.key === 'Enter' && results.length > 0) {
+    // Escape ditangani BasicDropdown IDDS (menutup panel dan mempertahankan teks).
+    if (event.key === 'Enter' && results.length > 0) {
       event.preventDefault();
       navigate(paths.article(results[0].id));
       close();

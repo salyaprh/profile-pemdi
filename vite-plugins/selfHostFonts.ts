@@ -11,6 +11,10 @@ import type { Plugin } from 'vite';
 const googleFontsImport =
   /@import\s*(?:url\(\s*)?(["'])https:\/\/fonts\.googleapis\.com[^"']*\1\s*\)?[^;]*;/g;
 
+export function stripGoogleFontsImport(css: string): string {
+  return css.replace(googleFontsImport, '');
+}
+
 export function selfHostFonts(): Plugin {
   return {
     name: 'self-host-fonts',
@@ -19,7 +23,7 @@ export function selfHostFonts(): Plugin {
       const file = id.split('?')[0];
       if (!file.includes('/@idds/') || !file.endsWith('.css')) return null;
 
-      const stripped = code.replace(googleFontsImport, '');
+      const stripped = stripGoogleFontsImport(code);
       return stripped === code ? null : { code: stripped, map: null };
     },
   };

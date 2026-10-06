@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import reactHooks from 'eslint-plugin-react-hooks';
+import testingLibrary from 'eslint-plugin-testing-library';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -43,6 +44,19 @@ export default defineConfig([
         { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
       ],
       'no-console': ['error', { allow: ['warn', 'error'] }],
+    },
+  },
+
+  // Berkas uji: aturan Testing Library (kueri berbasis role/label, tanpa akses DOM langsung).
+  {
+    files: ['**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}'],
+    extends: [testingLibrary.configs['flat/react']],
+    rules: {
+      // Uji sengaja memeriksa atribut/DOM yang tidak punya role (mis. <head>, <time>, <svg>).
+      'testing-library/no-node-access': 'off',
+      'testing-library/no-container': 'off',
+      // vi.mock/vi.spyOn pada modul sudah diketik lewat vi.mocked; berkas ini hanya kode uji.
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
 
