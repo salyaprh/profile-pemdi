@@ -9,7 +9,8 @@ import {
   isCategoryFilter,
   type CategoryFilter,
 } from '../data/articlesData';
-import { navigate, paths, useLocation, usePageTitle } from '../lib/router';
+import { navigate, paths, useLocation } from '../lib/router';
+import { usePageMeta } from '../lib/seo';
 
 const PAGE_SIZE = 12;
 
@@ -26,7 +27,11 @@ function buildUrl(category: CategoryFilter, page: number) {
  * (?kategori=...&halaman=...) agar tombol Back dan tautan langsung berfungsi.
  */
 export default function Articles() {
-  usePageTitle('Portofolio');
+  usePageMeta({
+    title: 'Portofolio',
+    description: 'Jelajahi kabar, wawasan, dan dokumentasi inisiatif Pemerintah Digital.',
+    path: paths.portfolio,
+  });
   const { searchParams } = useLocation();
 
   const categoryParam = searchParams.get('kategori');

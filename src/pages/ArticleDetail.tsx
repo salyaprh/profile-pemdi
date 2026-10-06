@@ -9,7 +9,8 @@ import {
   getRelatedArticles,
 } from '../data/articlesData';
 import { formatDate } from '../lib/format';
-import { navigate, paths, usePageTitle } from '../lib/router';
+import { navigate, paths } from '../lib/router';
+import { usePageMeta } from '../lib/seo';
 import NotFound from './NotFound';
 
 interface ArticleDetailProps {
@@ -19,7 +20,11 @@ interface ArticleDetailProps {
 /** Pola Blog Post IDDS: header artikel, isi, lalu "Artikel terkait". */
 export default function ArticleDetail({ articleId }: ArticleDetailProps) {
   const article = getArticleById(articleId);
-  usePageTitle(article?.title ?? 'Artikel tidak ditemukan');
+  usePageMeta(
+    article
+      ? { title: article.title, description: article.excerpt, path: paths.article(article.id) }
+      : { title: 'Artikel tidak ditemukan', noindex: true },
+  );
 
   if (!article) {
     return (
@@ -62,7 +67,16 @@ export default function ArticleDetail({ articleId }: ArticleDetailProps) {
         </header>
 
         <figure className="space-y-2">
-          <img src={article.mediaSrc} alt={article.title} className="h-auto w-full rounded-lg" />
+          {/* width/height = ukuran intrinsik berkas (328x202) agar tidak terjadi layout shift; gambar ini kandidat LCP. */}
+          <img
+            src={article.mediaSrc}
+            alt={article.title}
+            width={328}
+            height={202}
+            decoding="async"
+            fetchPriority="high"
+            className="h-auto w-full rounded-lg"
+          />
           {article.source && (
             <figcaption className="text-caption-sm text-content-secondary">Sumber: {article.source}</figcaption>
           )}

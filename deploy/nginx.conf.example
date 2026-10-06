@@ -1,0 +1,67 @@
+# CONTOH konfigurasi Nginx untuk hosting sendiri / infrastruktur instansi (mis. PDN).
+# BELUM DIUJI di server nyata: jalankan `nginx -t` dan uji dengan https://securityheaders.com
+# sebelum dipakai. Sesuaikan server_name, jalur sertifikat, dan root.
+#
+# Sumber kebenaran header adalah public/_headers (Cloudflare Pages/Netlify). Bila diubah di sana,
+# ubah juga di sini. Bila VITE_CONTACT_ENDPOINT mengarah ke origin lain, tambahkan origin itu ke
+# connect-src; endpoint se-origin (mis. /api/contact) tidak butuh perubahan CSP.
+
+server {
+    listen 80;
+    server_name pemdi.example.go.id;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name pemdi.example.go.id;
+
+    # ssl_certificate     /etc/ssl/pemdi/fullchain.pem;
+    # ssl_certificate_key /etc/ssl/pemdi/privkey.pem;
+
+    root /var/www/profile-pemdi/dist;   # hasil `npm run build`
+    index index.html;
+    server_tokens off;
+
+    # Header keamanan. add_header di level server diwarisi location HANYA bila location itu
+    # tidak memakai add_header sendiri; karena itu cache di bawah memakai `expires`, bukan add_header.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'sha256-vSV98NxOHJ8Tek3LzPC83WtmtKSHOO0TTmuchfXQNxc='; style-src-attr 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; media-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()" always;
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+
+    gzip on;
+    gzip_vary on;
+    gzip_types text/css application/javascript image/svg+xml application/xml text/plain;
+
+    # Berkas hasil build ber-hash: aman di-cache lama.
+    location /assets/ {
+        expires 1y;
+        try_files $uri =404;
+    }
+
+    # Gambar konten tidak ber-hash.
+    location /images/ {
+        expires 1d;
+        try_files $uri =404;
+    }
+
+    # index.html selalu divalidasi ulang agar rilis baru langsung terlihat.
+    location = /index.html {
+        expires -1;
+    }
+
+    # Berkas konfigurasi hosting lain tidak perlu terbuka.
+    location = /_headers {
+        return 404;
+    }
+
+    # SPA fallback: path tak dikenal dilayani index.html (halaman 404 ditangani aplikasi).
+    location / {
+        try_files $uri /index.html;
+    }
+}
