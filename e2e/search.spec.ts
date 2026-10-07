@@ -1,12 +1,5 @@
-import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-
-// Di layar kecil kolom cari berada di dalam menu hamburger.
-async function openSearch(page: Page, isMobile: boolean) {
-  await page.goto('/');
-  if (isMobile) await page.getByRole('button', { name: 'Buka menu' }).click();
-  return page.getByRole('textbox', { name: 'Cari artikel portofolio' });
-}
+import { openSearch } from './helpers';
 
 test('mengetik menampilkan jumlah dan daftar hasil', async ({ page, isMobile }) => {
   const input = await openSearch(page, isMobile);
@@ -42,7 +35,7 @@ test('Enter membuka hasil pertama', async ({ page, isMobile }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Transparansi');
 });
 
-test('Escape menutup panel hasil tetapi mempertahankan teks (dan menu mobile tetap terbuka)', async ({
+test('Escape menutup panel hasil tetapi mempertahankan teks dan kolom tetap terlihat', async ({
   page,
   isMobile,
 }) => {
@@ -53,15 +46,10 @@ test('Escape menutup panel hasil tetapi mempertahankan teks (dan menu mobile tet
   await input.press('Escape');
 
   await expect(page.getByText(/Tidak ada hasil untuk/)).toBeHidden();
+  // Di mobile ini juga membuktikan menu hamburger TIDAK ikut tertutup pada Escape pertama
+  // (Escape kedua dicakup layout.mobile.spec.ts).
   await expect(input).toBeVisible();
   await expect(input).toHaveValue('zzzxxx');
-
-  if (isMobile) {
-    // Escape kedua (panel sudah tertutup) menutup menu hamburger.
-    await input.press('Escape');
-    await expect(page.getByRole('button', { name: 'Buka menu' })).toBeVisible();
-    await expect(input).toBeHidden();
-  }
 });
 
 test('tombol hapus (×) bawaan IDDS mengosongkan kolom', async ({ page, isMobile }) => {
