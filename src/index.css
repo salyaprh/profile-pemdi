@@ -65,6 +65,34 @@
     visibility 0s linear 0.3s;
 }
 
+/*
+ * Perbaikan WCAG 2.2 AA pada komponen IDDS (hasil audit axe, dicakup e2e/a11y.spec.ts):
+ * - pesan error memakai #f02d2d di atas putih = 4,1:1 (butuh 4,5:1): pakai negative-600;
+ * - hover/fokus tombol primer menjadi LEBIH TERANG (4,3-4,4:1 dengan teks putih): gelapkan;
+ * - kolom input dan tombol hapus (x) lebih kecil dari target minimum 24px (WCAG 2.5.8).
+ */
+[class*='helper-text--err'],
+.ina-text-field .ina-text-field__helper-text[class*='--err'] {
+  color: var(--color-negative-600);
+}
+
+.ina-button--primary:hover:not(:disabled),
+.ina-button--primary:focus:not(:disabled) {
+  background-color: var(--color-primary-600);
+}
+
+.ina-text-field__input {
+  min-height: 1.5rem;
+}
+
+.ina-text-field__clear-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+}
+
 /* Fokus keyboard yang konsisten dan terlihat (WCAG 2.2 AA) */
 :where(a, button, [tabindex]):focus-visible {
   outline: 2px solid var(--color-guide-500);

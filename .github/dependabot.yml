@@ -15,6 +15,30 @@ updates:
       prod-dependencies:
         dependency-type: production
         update-types: [minor, patch]
+    # Pembaruan MAYOR berikut sengaja ditahan. Alasannya konkret (jangan dihapus tanpa memeriksanya):
+    ignore:
+      # ESLint 10: eslint-plugin-jsx-a11y (linter aksesibilitas) belum mendukungnya (peer eslint <= 9).
+      - dependency-name: eslint
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@eslint/js'
+        update-types: ['version-update:semver-major']
+      # Vite 8: mengganti bundler (Rolldown) dan mewajibkan @vitejs/plugin-react 6 (rewrite).
+      # Dikerjakan sebagai migrasi terpisah, bukan lewat PR otomatis.
+      - dependency-name: vite
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@vitejs/plugin-react'
+        update-types: ['version-update:semver-major']
+      # jsdom >= 28 dan jest-dom 7 mensyaratkan Node >= 22.22, padahal engines mengizinkan Node 20.19.
+      - dependency-name: jsdom
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@testing-library/jest-dom'
+        update-types: ['version-update:semver-major']
+      # Tipe Node harus sejajar dengan Node minimum yang didukung (20/22), bukan Node terbaru.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # typescript-eslint mensyaratkan TypeScript < 6.1.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /
