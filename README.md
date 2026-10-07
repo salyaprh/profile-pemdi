@@ -1,10 +1,10 @@
 # PEMDI PANRB — Profil Pemerintah Digital
 
-Situs profil PEMDI / PANRB (Pemerintah Digital) yang menampilkan karya dan inisiatif TDP. Dibangun dengan [INA Digital Design System (IDDS)](https://design.inadigital.go.id/) dan tema brand **PANRB**.
+Situs profil PEMDI / PANRB (Pemerintah Digital) yang menampilkan karya dan inisiatif TDP. Dibangun dengan [INA Digital Design System (IDDS)](https://design.inadigital.go.id/) dan tema brand **INAgov** (kebiruan; logo tetap PANRB).
 
 ## Stack
 
-- React 19 + TypeScript (strict) + Vite 5
+- React 19 + TypeScript (strict) + Vite 7
 - Tailwind CSS v4 dengan token IDDS (`@idds/styles`)
 - [`@idds/react`](https://design.inadigital.go.id/getting-started/code/react/) untuk komponen, `@tabler/icons-react` untuk ikon
 - Font Inter di-self-host lewat `@fontsource/inter` (tanpa Google Fonts)
@@ -16,13 +16,27 @@ Butuh Node.js 20.19+ atau 22.12+ (syarat Vite 7).
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
-npm run typecheck  # tsc untuk src/ dan untuk konfigurasi build (vite.config.ts, vite-plugins/)
-npm run build      # typecheck + build produksi ke dist/
-npm run preview    # pratinjau hasil build
+npm run dev            # http://localhost:5173
+npm run build          # typecheck + build produksi ke dist/
+npm run preview        # pratinjau hasil build
+
+npm run typecheck      # tsc untuk src/, konfigurasi build, dan e2e
+npm run lint           # ESLint (type-aware, react-hooks, jsx-a11y, testing-library, playwright)
+npm run format         # Prettier (format:check untuk memeriksa saja)
+npm test               # Vitest: uji unit dan komponen (test:watch, test:coverage)
+npm run test:e2e       # Playwright: uji end-to-end terhadap build produksi (butuh: npx playwright install chromium)
 ```
 
-CI (`.github/workflows/ci.yml`) menjalankan `npm ci`, audit dependency produksi, `npm run build`, dan memastikan bundle tidak merujuk Google Fonts pada setiap PR. Dependabot memperbarui dependency dan GitHub Actions tiap pekan.
+## Pengujian
+
+| Lapisan         | Alat                                    | Cakupan                                                                                                                                                                                                                                                                                                                                           |
+| --------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit & komponen | Vitest + Testing Library + jsdom        | Logika (validator, data, router, SEO), komponen dan halaman dengan komponen IDDS asli (tidak di-mock), serta invarian keamanan: CSP di `public/_headers` tanpa `unsafe-inline`/host eksternal, hash style IDDS dihitung dari paket terpasang, dan CSP Nginx identik dengan `_headers`                                                             |
+| End-to-end      | Playwright (Chromium, desktop + mobile) | Build produksi dilayani dengan header dari `_headers`. Setiap uji otomatis gagal bila ada error konsol, pelanggaran CSP, atau permintaan ke origin lain. Mencakup routing, pencarian, formulir (sukses, 500, jaringan putus, klik ganda), layout, SEO, keamanan, dan audit aksesibilitas axe WCAG 2.2 AA pada semua halaman dan status interaktif |
+
+Uji ditulis agar dapat gagal: kualitasnya diperiksa dengan uji mutasi manual (menyisipkan bug yang masuk akal, lalu memastikan uji menangkapnya).
+
+CI (`.github/workflows/ci.yml`) menjalankan dua job paralel pada setiap PR: `check` (audit dependency produksi, Prettier, ESLint, typecheck, Vitest, build, guard bundle bebas Google Fonts) dan `e2e` (Playwright). Dependabot memperbarui dependency dan GitHub Actions tiap pekan; pembaruan mayor yang sengaja ditahan (beserta alasannya) tercatat di `.github/dependabot.yml`.
 
 ## Rute
 
@@ -38,10 +52,10 @@ CI (`.github/workflows/ci.yml`) menjalankan `npm ci`, audit dependency produksi,
 
 ```
 src/
-  main.tsx            entry: font, tema IDDS (setBrandTheme('panrb')), ErrorBoundary, ToastProvider
+  main.tsx            entry: font, tema IDDS (setBrandTheme('inagov')), ErrorBoundary, ToastProvider
   App.tsx             pemetaan rute -> halaman
   index.css           Tailwind, token IDDS, skala tipografi IDDS
-  components/         Header, Footer, SearchBar, ArticleCard, ButtonLink, EmptyState, ErrorBoundary, Layout
+  components/         Header, Footer, SearchBar, PaginationNav, ArticleCard, ButtonLink, EmptyState, ErrorBoundary, Layout
   pages/              Home, Articles (portofolio), ArticleDetail, Contact, NotFound
   data/               articlesData.ts (data dummy + helper), siteContent.ts (menu, footer, statistik)
   lib/                router.tsx, seo.ts (title/meta per halaman), validators.ts, format.ts
@@ -103,10 +117,24 @@ Catatan:
 
 Seluruh tampilan mengacu ke IDDS. Gunakan token, bukan warna hex langsung:
 
-- Warna: `text-content-*`, `border-stroke-*`, `bg-background-*`, `primary-*` (merah PANRB), `guide-*` (biru informatif) — [Warna](https://design.inadigital.go.id/foundation/color/)
+- Warna: `text-content-*`, `border-stroke-*`, `bg-background-*`, `primary-*` (mengikuti tema aktif: INAgov biru), `guide-*` (biru informatif) — [Warna](https://design.inadigital.go.id/foundation/color/)
 - Tipografi (Inter): utilitas `text-display-*`, `text-h1`..`text-h5`, `text-body*`, `text-caption*` yang didefinisikan di `src/index.css` — [Tipografi](https://design.inadigital.go.id/foundation/typography/)
 - Pola yang dipakai: [Header](https://design.inadigital.go.id/pattern/header/guide/), [Footer](https://design.inadigital.go.id/pattern/footer/guide/), [Searchbar](https://design.inadigital.go.id/pattern/searchbar/guide/), [Blog Section](https://design.inadigital.go.id/pattern/blog-section/guide/), [Blog Post](https://design.inadigital.go.id/pattern/blog-post/guide/), [404 Section](https://design.inadigital.go.id/pattern/404-section/guide/), [Empty State](https://design.inadigital.go.id/pattern/empty-state/guide/)
-- Aksesibilitas mengikuti [WCAG 2.2 AA](https://design.inadigital.go.id/foundation/accessibility/): tautan semantik, skip link, fokus terlihat, `aria-current`.
+- Aksesibilitas mengikuti [WCAG 2.2 AA](https://design.inadigital.go.id/foundation/accessibility/): tautan semantik, skip link, fokus terlihat, `aria-current`. Dipantau otomatis oleh `e2e/a11y.spec.ts` (axe).
+
+### Penyimpangan dari komponen IDDS (hasil audit axe)
+
+Beberapa komponen IDDS (`@idds/react` 1.6.x) tidak lolos WCAG 2.2 AA yang diacu IDDS sendiri, sehingga ditangani di sisi kita. **Periksa lagi setelah upgrade `@idds/react`; sebaiknya dilaporkan ke tim IDDS (ux@inadigital.co.id).**
+
+| Komponen IDDS            | Masalah                                                                                                                  | Penanganan                                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `BasicDropdown`          | `<div role="button">` membungkus input dan tombol hapus (`nested-interactive`)                                           | `SearchBar` membuat panel hasil sendiri                                                            |
+| `Pagination`             | tombol ikon tanpa nama (`button-name`), `<select>` tanpa nama (`select-name`), dan halaman lanjutan tidak dapat dirayapi | `PaginationNav`: tautan sungguhan, bergaya token IDDS                                              |
+| `Accordion`              | konten tertutup hanya di-clip sehingga tautannya tetap dapat difokus lewat Tab (WCAG 2.4.7)                              | CSS di `src/index.css` (`visibility: hidden` dengan jeda animasi)                                  |
+| `TextField` / `TextArea` | teks error `#f02d2d` di atas putih = 4,1:1 (butuh 4,5:1)                                                                 | override ke `negative-600` di `src/index.css`                                                      |
+| `Button` (primer)        | warna hover lebih terang sehingga 4,3-4,4:1 dengan teks putih                                                            | hover/fokus digelapkan (`primary-600`) di `src/index.css`                                          |
+| `TextField`              | `id="undefined"` bila tanpa `id`/`name`/label; input 21px dan tombol hapus kurang dari 24px (WCAG 2.5.8)                 | selalu beri `id`; `min-height`/`min-width` 24px di `src/index.css`                                 |
+| `PhoneInput`             | daftar negara berperan sebagai input ARIA tanpa nama (`aria-input-field-name`)                                           | **belum dapat diperbaiki** (tidak ada prop); hanya selector itu dikecualikan di `e2e/a11y.spec.ts` |
 
 Catatan: `Card` IDDS sudah membungkus `title` dalam `<h3>` dan `description` dalam `<p>`, jadi isi keduanya dengan `<span>`.
 

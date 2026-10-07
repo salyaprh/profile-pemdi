@@ -14,7 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  # Pemeriksaan cepat: gaya, lint, tipe, uji unit/komponen, build, dan guard privasi.
+  check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -35,7 +36,19 @@ jobs:
       - name: Audit dependency produksi
         run: npm audit --omit=dev --audit-level=high
 
-      - name: Type-check dan build
+      - name: Format (Prettier)
+        run: npm run format:check
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Uji unit dan komponen (Vitest)
+        run: npm test
+
+      - name: Build
         run: npm run build
 
       - name: Pastikan bundle tidak memuat font dari pihak ketiga
@@ -44,3 +57,38 @@ jobs:
             echo "::error::Bundle masih merujuk Google Fonts. Periksa vite-plugins/selfHostFonts.ts."
             exit 1
           fi
+
+  # Uji end-to-end di browser nyata terhadap build produksi yang dilayani dengan header dari
+  # public/_headers: CSP, keamanan, SEO, routing, pencarian, formulir, dan audit aksesibilitas axe.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependency sesuai lockfile
+        run: npm ci
+
+      - name: Pasang Chromium untuk Playwright
+        run: npx playwright install --with-deps chromium
+
+      # Playwright membangun situs dan menyalakan server uji sendiri (webServer di playwright.config.ts).
+      - name: Uji e2e (Playwright)
+        run: npm run test:e2e
+
+      - name: Unggah laporan bila gagal
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: laporan-playwright
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
