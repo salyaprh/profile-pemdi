@@ -7,4 +7,3 @@ package-lock.json
 # Hasil optimasi (svgo) dan berkas khusus hosting, bukan kode sumber
 public/panrb.svg
 public/_headers
-deploy/nginx.conf.example
