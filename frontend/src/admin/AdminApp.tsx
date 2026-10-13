@@ -1,8 +1,10 @@
-import { lazy, Suspense, useState, type ReactElement } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactElement } from 'react';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
-import { paths, useLocation } from '../lib/router';
+import { navigate, paths, useLocation } from '../lib/router';
 import AdminLayout from './AdminLayout';
 import { useAuthenticatedUser } from './auth';
+import AccountPage from './pages/AccountPage';
+import ActivityPage from './pages/ActivityPage';
 import AdminForbiddenPage from './pages/AdminForbiddenPage';
 import AdminNotFoundPage from './pages/AdminNotFoundPage';
 import ArticleListPage from './pages/ArticleListPage';
@@ -11,6 +13,9 @@ import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import MessageDetailPage from './pages/MessageDetailPage';
 import MessagesPage from './pages/MessagesPage';
+import SettingsPage from './pages/SettingsPage';
+import UserFormPage from './pages/UserFormPage';
+import UsersPage from './pages/UsersPage';
 import { createAdminQueryClient } from './queryClient';
 import RequireAuth from './RequireAuth';
 
@@ -25,34 +30,69 @@ function EditorLoading() {
   );
 }
 
+interface AdminRouteDefinition {
+  /** Pola path lengkap; tangkapan pertama (bila ada) adalah id angka yang diteruskan ke `render`. */
+  pattern: RegExp;
+  /** Halaman khusus Admin; backend juga menolak permintaan Penulis (403). */
+  adminOnly?: boolean;
+  render: (id: number | null) => ReactElement;
+}
+
+const adminRoutes: AdminRouteDefinition[] = [
+  { pattern: /^\/admin$/, render: () => <DashboardPage /> },
+  { pattern: /^\/admin\/artikel$/, render: () => <ArticleListPage /> },
+  { pattern: /^\/admin\/artikel\/baru$/, render: () => <ArticleEditor articleId={null} /> },
+  { pattern: /^\/admin\/artikel\/(\d+)$/, render: (id) => <ArticleEditor articleId={id} /> },
+  { pattern: /^\/admin\/akun$/, render: () => <AccountPage /> },
+  { pattern: /^\/admin\/kategori$/, adminOnly: true, render: () => <CategoriesPage /> },
+  { pattern: /^\/admin\/pesan$/, adminOnly: true, render: () => <MessagesPage /> },
+  {
+    pattern: /^\/admin\/pesan\/(\d+)$/,
+    adminOnly: true,
+    // key: berpindah antarpesan memasang ulang halaman (penandaan "dibaca" per pesan).
+    render: (id) => <MessageDetailPage key={id} messageId={id ?? 0} />,
+  },
+  { pattern: /^\/admin\/pengguna$/, adminOnly: true, render: () => <UsersPage /> },
+  {
+    pattern: /^\/admin\/pengguna\/baru$/,
+    adminOnly: true,
+    render: () => <UserFormPage userId={null} />,
+  },
+  {
+    pattern: /^\/admin\/pengguna\/(\d+)$/,
+    adminOnly: true,
+    render: (id) => <UserFormPage key={id} userId={id} />,
+  },
+  { pattern: /^\/admin\/pengaturan$/, adminOnly: true, render: () => <SettingsPage /> },
+  { pattern: /^\/admin\/aktivitas$/, adminOnly: true, render: () => <ActivityPage /> },
+];
+
+function ArticleEditor({ articleId }: { articleId: number | null }) {
+  return (
+    <Suspense fallback={<EditorLoading />}>
+      <ArticleEditorPage articleId={articleId} />
+    </Suspense>
+  );
+}
+
 function AdminRoute({ pathname }: { pathname: string }) {
   const user = useAuthenticatedUser();
+  // Akun dengan kata sandi sementara hanya boleh membuka halaman Akun saya (backend juga menolak
+  // endpoint lain dengan 403).
+  const mustChangePassword = user.must_change_password && pathname !== paths.adminAccount;
 
-  if (pathname === paths.admin) return <DashboardPage />;
-  if (pathname === paths.adminArticles) return <ArticleListPage />;
+  useEffect(() => {
+    if (mustChangePassword) navigate(paths.adminAccount, { replace: true, force: true });
+  }, [mustChangePassword]);
 
-  const articleMatch = pathname.match(/^\/admin\/artikel\/(\d+)$/);
-  if (pathname === paths.adminArticleNew || articleMatch) {
-    return (
-      <Suspense fallback={<EditorLoading />}>
-        <ArticleEditorPage articleId={articleMatch ? Number(articleMatch[1]) : null} />
-      </Suspense>
-    );
+  if (mustChangePassword) return null;
+
+  for (const route of adminRoutes) {
+    const match = pathname.match(route.pattern);
+    if (!match) continue;
+    if (route.adminOnly && user.role !== 'admin') return <AdminForbiddenPage />;
+    return route.render(match[1] === undefined ? null : Number(match[1]));
   }
-
-  // Halaman khusus Admin; backend juga menolak permintaan Penulis (403).
-  const adminOnly = (page: ReactElement) => (user.role === 'admin' ? page : <AdminForbiddenPage />);
-
-  if (pathname === paths.adminCategories) return adminOnly(<CategoriesPage />);
-  if (pathname === paths.adminMessages) return adminOnly(<MessagesPage />);
-
-  const messageMatch = pathname.match(/^\/admin\/pesan\/(\d+)$/);
-  if (messageMatch) {
-    const id = Number(messageMatch[1]);
-    // key: berpindah antarpesan memasang ulang halaman (status "sudah ditandai dibaca" per pesan).
-    return adminOnly(<MessageDetailPage key={id} messageId={id} />);
-  }
-
   return <AdminNotFoundPage />;
 }
 

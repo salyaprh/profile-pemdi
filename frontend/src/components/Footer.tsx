@@ -1,7 +1,14 @@
-import { Accordion, AccordionGroup } from '@idds/react';
+import { Accordion, AccordionGroup, Skeleton } from '@idds/react';
+import {
+  IconBrandFacebook,
+  IconBrandInstagram,
+  IconBrandX,
+  IconBrandYoutube,
+  type Icon,
+} from '@tabler/icons-react';
 import { footerNavigation, siteDescription, siteName } from '../data/siteContent';
 import { Link, paths, portfolioUrl } from '../lib/router';
-import { useCategories } from '../services/content';
+import { useCategories, useSite, type SiteSettings } from '../services/content';
 
 const linkClass =
   'text-caption font-medium text-content-secondary transition-colors hover:text-primary-600';
@@ -17,6 +24,76 @@ function ColumnLinks({ links }: { links: { label: string; to: string }[] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+const socialLinks: { key: keyof SiteSettings['social']; label: string; icon: Icon }[] = [
+  { key: 'facebook', label: 'Facebook', icon: IconBrandFacebook },
+  { key: 'instagram', label: 'Instagram', icon: IconBrandInstagram },
+  { key: 'x', label: 'X', icon: IconBrandX },
+  { key: 'youtube', label: 'YouTube', icon: IconBrandYoutube },
+];
+
+/** Deskripsi, kontak, dan media sosial dari pengaturan situs; bagian yang kosong tidak tampil. */
+function SiteInfo() {
+  const site = useSite();
+
+  if (site.isPending) {
+    return (
+      <div className="space-y-2" aria-hidden="true">
+        <Skeleton width="100%" height="1rem" rounded="md" />
+        <Skeleton width="80%" height="1rem" rounded="md" />
+      </div>
+    );
+  }
+
+  // Bila pengaturan gagal dimuat, deskripsi bawaan tetap tampil; kontak dan media sosial menyusul.
+  const { description, contact, social } = site.data ?? {
+    description: siteDescription,
+    contact: { email: null, phone: null, address: null },
+    social: { facebook: null, instagram: null, x: null, youtube: null },
+  };
+  const contactLines = [
+    contact.address && <span key="alamat">{contact.address}</span>,
+    contact.phone && (
+      <a key="telepon" href={`tel:${contact.phone.replace(/[^\d+]/g, '')}`} className={linkClass}>
+        {contact.phone}
+      </a>
+    ),
+    contact.email && (
+      <a key="email" href={`mailto:${contact.email}`} className={linkClass}>
+        {contact.email}
+      </a>
+    ),
+  ].filter(Boolean);
+  const socials = socialLinks.filter(({ key }) => social[key]);
+
+  return (
+    <>
+      <p className="text-caption text-content-secondary">{description}</p>
+      {contactLines.length > 0 && (
+        <address className="flex flex-col gap-1 text-caption not-italic text-content-secondary">
+          {contactLines}
+        </address>
+      )}
+      {socials.length > 0 && (
+        <ul className="flex gap-3">
+          {socials.map(({ key, label, icon: SocialIcon }) => (
+            <li key={key}>
+              <a
+                href={social[key] ?? undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${label} ${siteName} (membuka tab baru)`}
+                className="inline-flex size-9 items-center justify-center rounded-full border border-stroke-primary text-content-secondary transition-colors hover:border-primary-600 hover:text-primary-600"
+              >
+                <SocialIcon size={18} aria-hidden="true" />
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
 
@@ -49,7 +126,7 @@ export default function Footer() {
             >
               <img src="/panrb.svg" alt="" className="h-10 w-auto" />
             </Link>
-            <p className="text-caption text-content-secondary">{siteDescription}</p>
+            <SiteInfo />
           </div>
 
           <div className="hidden gap-16 md:flex">

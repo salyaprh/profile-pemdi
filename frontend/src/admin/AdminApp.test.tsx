@@ -6,24 +6,9 @@ import { server, setXsrfCookie } from '../test/server';
 import { renderWithToast, setUrl } from '../test/utils';
 import AdminApp from './AdminApp';
 import type { AdminUser } from './auth';
+import { adminUser as admin, penulisUser as penulis } from './test-helpers';
 import type { DashboardData } from './pages/DashboardPage';
 import { createAdminQueryClient } from './queryClient';
-
-const admin: AdminUser = {
-  id: 1,
-  name: 'Admin Utama',
-  email: 'admin@pemdi.test',
-  role: 'admin',
-  role_label: 'Admin',
-};
-
-const penulis: AdminUser = {
-  id: 2,
-  name: 'Siti Penulis',
-  email: 'siti@pemdi.test',
-  role: 'penulis',
-  role_label: 'Penulis',
-};
 
 const dashboard: DashboardData = {
   metrics: { published: 36, in_review: 2, draft: 5 },

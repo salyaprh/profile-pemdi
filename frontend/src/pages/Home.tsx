@@ -1,14 +1,42 @@
-import { Button } from '@idds/react';
+import { Button, Skeleton } from '@idds/react';
 import { IconArrowRight } from '@tabler/icons-react';
 import ArticleCard, { ArticleGridSkeleton } from '../components/ArticleCard';
 import ButtonLink from '../components/ButtonLink';
 import EmptyState from '../components/EmptyState';
-import { heroStats } from '../data/siteContent';
 import { paths } from '../lib/router';
 import { usePageMeta } from '../lib/seo';
-import { useArticles } from '../services/content';
+import { useArticles, useSite } from '../services/content';
 
 const FEATURED_COUNT = 3;
+
+/** Tiga angka ringkas dari pengaturan situs; tidak ditampilkan bila gagal dimuat. */
+function HeroStats() {
+  const site = useSite();
+  if (site.isError) return null;
+
+  const stats = site.data?.hero_stats ?? Array.from({ length: 3 }, () => null);
+  return (
+    <section className="mx-auto max-w-[1240px] px-5 py-12 lg:px-8 lg:py-16">
+      <ul className="grid gap-6 sm:grid-cols-3">
+        {stats.map((stat, index) => (
+          <li key={index} className="border-l-2 border-primary-600 pl-5">
+            {stat ? (
+              <>
+                <p className="text-h4 font-bold text-content-primary">{stat.value}</p>
+                <p className="mt-1 text-caption text-content-secondary">{stat.label}</p>
+              </>
+            ) : (
+              <div aria-hidden="true" className="space-y-2">
+                <Skeleton width="4rem" height="2rem" rounded="md" />
+                <Skeleton width="10rem" height="1rem" rounded="md" />
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 /** Tiga artikel terbit terbaru (pola Blog Section IDDS). */
 function FeaturedArticles() {
@@ -110,16 +138,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1240px] px-5 py-12 lg:px-8 lg:py-16">
-        <ul className="grid gap-6 sm:grid-cols-3">
-          {heroStats.map(({ value, label }) => (
-            <li key={label} className="border-l-2 border-primary-600 pl-5">
-              <p className="text-h4 font-bold text-content-primary">{value}</p>
-              <p className="mt-1 text-caption text-content-secondary">{label}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <HeroStats />
 
       {/* Pola Blog Section IDDS: judul + deskripsi, kartu seragam, tombol "Lihat Semua". */}
       <section className="bg-background-secondary" aria-labelledby="judul-portofolio">

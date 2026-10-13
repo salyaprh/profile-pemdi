@@ -9,7 +9,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import ButtonLink from '../../components/ButtonLink';
 import { formatDateTime } from '../../lib/format';
-import { paths } from '../../lib/router';
+import { Link, paths } from '../../lib/router';
 import { usePageMeta } from '../../lib/seo';
 import { apiRequest } from '../../services/api';
 import { useAuthenticatedUser } from '../auth';
@@ -139,12 +139,17 @@ export default function DashboardPage() {
               aria-labelledby="judul-aktivitas"
               className="rounded-xl border border-stroke-primary bg-background-primary"
             >
-              <h2
-                id="judul-aktivitas"
-                className="border-b border-stroke-primary px-5 py-4 text-body-sm font-semibold"
-              >
-                Aktivitas terbaru
-              </h2>
+              <div className="flex items-center justify-between gap-3 border-b border-stroke-primary px-5 py-4">
+                <h2 id="judul-aktivitas" className="text-body-sm font-semibold">
+                  Aktivitas terbaru
+                </h2>
+                <Link
+                  to={paths.adminActivity}
+                  className="rounded text-caption font-medium text-primary-600 hover:underline"
+                >
+                  Lihat semua
+                </Link>
+              </div>
               {!dashboard.data ? (
                 <div className="space-y-3 p-5">
                   <Skeleton height="1.25rem" />

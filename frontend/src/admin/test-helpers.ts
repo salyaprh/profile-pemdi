@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { server, setXsrfCookie } from '../test/server';
 import type { AdminArticle, Category } from './articles/types';
 import type { AdminUser } from './auth';
+import type { ManagedUser } from './users/api';
 
 /** Data dan backend tiruan untuk uji halaman admin (bentuk sama dengan resource Laravel). */
 
@@ -11,6 +12,7 @@ export const adminUser: AdminUser = {
   email: 'admin@pemdi.test',
   role: 'admin',
   role_label: 'Admin',
+  must_change_password: false,
 };
 
 export const penulisUser: AdminUser = {
@@ -19,6 +21,7 @@ export const penulisUser: AdminUser = {
   email: 'siti@pemdi.test',
   role: 'penulis',
   role_label: 'Penulis',
+  must_change_password: false,
 };
 
 export const categories: Category[] = [
@@ -71,4 +74,20 @@ export function mockSession(user: AdminUser) {
     http.get('/api/auth/me', () => HttpResponse.json({ user })),
     http.get('/api/admin/categories', () => HttpResponse.json({ data: categories })),
   );
+}
+
+/** Pengguna dalam daftar Admin (bentuk sama dengan Admin\UserController); bawaannya Penulis aktif. */
+export function managedUser(overrides: Partial<ManagedUser> = {}): ManagedUser {
+  return {
+    id: 2,
+    name: 'Siti Penulis',
+    email: 'siti@pemdi.test',
+    role: 'penulis',
+    role_label: 'Penulis',
+    is_active: true,
+    last_login_at: null,
+    must_change_password: false,
+    articles_count: 0,
+    ...overrides,
+  };
 }

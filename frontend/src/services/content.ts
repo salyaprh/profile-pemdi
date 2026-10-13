@@ -73,7 +73,30 @@ export function articlesUrl({ kategori, cari, page, perPage }: ArticleQuery = {}
   return query ? `/api/articles?${query}` : '/api/articles';
 }
 
+export interface HeroStat {
+  value: string;
+  label: string;
+}
+
+/**
+ * Pengaturan situs yang dikelola Admin (GET /api/site, publik). Tautan media sosial dan kontak yang
+ * kosong bernilai null dan tidak ditampilkan.
+ */
+export interface SiteSettings {
+  description: string;
+  /** Tepat 3 angka statistik di beranda. */
+  hero_stats: HeroStat[];
+  contact: { email: string | null; phone: string | null; address: string | null };
+  social: {
+    facebook: string | null;
+    instagram: string | null;
+    x: string | null;
+    youtube: string | null;
+  };
+}
+
 export const contentKeys = {
+  site: ['public', 'site'] as const,
   articles: (query: ArticleQuery) => ['public', 'articles', query] as const,
   article: (slug: string) => ['public', 'article', slug] as const,
   categories: ['public', 'categories'] as const,
@@ -102,6 +125,15 @@ export function useCategories() {
     queryFn: async ({ signal }) =>
       (await apiRequest<{ data: PublicCategory[] }>('/api/categories', { signal })).data,
     // Kategori jarang berubah dan dipakai di footer setiap halaman.
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useSite() {
+  return useQuery({
+    queryKey: contentKeys.site,
+    queryFn: async ({ signal }) =>
+      (await apiRequest<{ data: SiteSettings }>('/api/site', { signal })).data,
     staleTime: 5 * 60_000,
   });
 }
