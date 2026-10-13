@@ -215,6 +215,10 @@ img.ProseMirror-separator {
   color: var(--color-primary-600);
   text-decoration: underline;
   text-underline-offset: 2px;
+  /* Area sentuh ≥ 24px (WCAG 2.5.8) untuk tautan yang berdiri sendiri satu paragraf, yang tidak
+     termasuk pengecualian "tautan di dalam kalimat". Padding vertikal elemen inline memperbesar
+     area klik tanpa mengubah tinggi baris. */
+  padding-block: 0.25rem;
 }
 
 .article-body img {

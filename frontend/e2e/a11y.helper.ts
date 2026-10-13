@@ -12,8 +12,24 @@ export interface AuditOptions {
   tags?: string[];
 }
 
+/**
+ * Menunggu animasi dan transisi CSS yang berhingga selesai (fade-in toast/modal, tombol yang baru
+ * aktif). Selama transisi axe membaca warna campuran yang bukan warna sebenarnya.
+ */
+async function waitForAnimations(page: Page) {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  );
+}
+
 /** Menjalankan axe dan mengembalikan ringkasan pelanggaran yang mudah dibaca. */
 export async function audit(page: Page, options: AuditOptions = {}): Promise<string[]> {
+  await waitForAnimations(page);
   let builder = new AxeBuilder({ page }).withTags(options.tags ?? WCAG_TAGS);
   for (const selector of options.exclude ?? []) builder = builder.exclude(selector);
   if (options.disableRules?.length) builder = builder.disableRules(options.disableRules);

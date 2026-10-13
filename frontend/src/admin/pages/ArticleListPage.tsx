@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Button, Chip, TextField } from '@idds/react';
+import { Alert, Button, TextField } from '@idds/react';
 import { IconArticle, IconPlus, IconSearch } from '@tabler/icons-react';
 import ButtonLink from '../../components/ButtonLink';
 import EmptyState from '../../components/EmptyState';
@@ -10,6 +10,7 @@ import { usePageMeta } from '../../lib/seo';
 import { useArticles, useCategories } from '../articles/api';
 import type { ArticleListFilters, ArticleStatusFilter } from '../articles/types';
 import { useAuthenticatedUser } from '../auth';
+import FilterChips from '../components/FilterChips';
 import StatusBadge from '../components/StatusBadge';
 
 const statusOptions: {
@@ -90,22 +91,12 @@ export default function ArticleListPage() {
       </div>
 
       <div className="space-y-4 rounded-xl border border-stroke-primary bg-background-primary p-4">
-        <div role="group" aria-label="Filter status">
-          <Chip
-            options={options.map(({ label, value }) => ({ label, value }))}
-            selected={filters.status ?? 'semua'}
-            onSelect={(value) => {
-              const next = String(value);
-              applyFilters({ status: next === 'semua' ? null : (next as ArticleStatusFilter) });
-            }}
-            showCustomization={false}
-            variant="outline"
-            size="small"
-            className="[&_.ina-chip__list]:flex-wrap [&_.ina-chip__list]:gap-2"
-            selectedColor="var(--color-primary-600)"
-            selectedChipClassName="!bg-primary-50"
-          />
-        </div>
+        <FilterChips
+          label="Filter status"
+          options={options}
+          selected={filters.status ?? 'semua'}
+          onSelect={(value) => applyFilters({ status: value === 'semua' ? null : value })}
+        />
         <div className="grid gap-3 sm:grid-cols-[1fr_240px]">
           <TextField
             id="artikel-cari"

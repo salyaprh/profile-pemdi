@@ -77,8 +77,22 @@ describe('daftar artikel', () => {
     const user = setup('/admin/artikel?halaman=2');
 
     await screen.findByRole('table');
-    await user.click(screen.getByRole('button', { name: 'Menunggu tinjauan' }));
+    const filter = screen.getByRole('group', { name: 'Filter status' });
+    expect(within(filter).getByRole('button', { name: 'Semua' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(within(filter).getByRole('button', { name: 'Menunggu tinjauan' }));
     await waitFor(() => expect(window.location.search).toBe('?status=ditinjau'));
+    // Chip aktif terbaca pembaca layar (Chip IDDS tidak menyediakannya).
+    expect(within(filter).getByRole('button', { name: 'Menunggu tinjauan' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(within(filter).getByRole('button', { name: 'Semua' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
 
     await user.selectOptions(screen.getByLabelText('Kategori'), 'Layanan Publik');
     await waitFor(() => expect(window.location.search).toBe('?status=ditinjau&kategori=1'));
