@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 /**
  * Isi artikel. `status`, `review_note`, `published_at`, dan `author_id` sengaja tidak bisa diisi
@@ -52,6 +53,28 @@ class Article extends Model
     public function isOwnedBy(User $user): bool
     {
         return $this->author_id === $user->id;
+    }
+
+    /**
+     * Slug unik dari judul (termasuk artikel di sampah, karena slug-nya tetap tercatat).
+     * Bila sudah dipakai, diberi akhiran -2, -3, dan seterusnya.
+     */
+    public static function uniqueSlug(string $title, ?int $ignoreId = null): string
+    {
+        // Dipotong 200 karakter (sisa untuk akhiran); tanda hubung di ujung potongan dibuang.
+        $base = rtrim(Str::limit(Str::slug($title), 200, ''), '-') ?: 'artikel';
+        $slug = $base;
+
+        $taken = fn (string $candidate): bool => self::withTrashed()
+            ->where('slug', $candidate)
+            ->when($ignoreId !== null, fn (Builder $query) => $query->whereKeyNot($ignoreId))
+            ->exists();
+
+        for ($suffix = 2; $taken($slug); $suffix++) {
+            $slug = "{$base}-{$suffix}";
+        }
+
+        return $slug;
     }
 
     /**

@@ -13,6 +13,10 @@ export const paths = {
   contact: '/contact',
   admin: '/admin',
   adminLogin: '/admin/masuk',
+  adminArticles: '/admin/artikel',
+  adminArticleNew: '/admin/artikel/baru',
+  adminArticle: (id: number) => `/admin/artikel/${id}`,
+  adminCategories: '/admin/kategori',
 } as const;
 
 /** Semua path di bawah /admin milik panel CMS (dimuat terpisah, tanpa header/footer situs). */
@@ -42,16 +46,38 @@ interface NavigateOptions {
   replace?: boolean;
   /** Gulir ke atas setelah berpindah (default: true). */
   scroll?: boolean;
+  /** Abaikan penahan navigasi (mis. sesi berakhir, sehingga halaman Masuk wajib tampil). */
+  force?: boolean;
 }
 
-export function navigate(to: string, { replace = false, scroll = true }: NavigateOptions = {}) {
+/**
+ * Penahan navigasi aktif (mis. formulir yang belum disimpan). Mengembalikan `true` bila navigasi
+ * boleh dilanjutkan. Hanya menahan navigasi di dalam aplikasi; muat ulang/tutup tab ditangani
+ * `beforeunload`, dan tombol Back browser tidak dapat ditahan.
+ */
+let navigationBlocker: (() => boolean) | null = null;
+
+export function setNavigationBlocker(blocker: () => boolean): () => void {
+  navigationBlocker = blocker;
+  return () => {
+    if (navigationBlocker === blocker) navigationBlocker = null;
+  };
+}
+
+/** Berpindah halaman. Mengembalikan `false` bila dibatalkan penahan navigasi. */
+export function navigate(
+  to: string,
+  { replace = false, scroll = true, force = false }: NavigateOptions = {},
+): boolean {
   const current = window.location.pathname + window.location.search;
   if (to !== current) {
+    if (!force && navigationBlocker && !navigationBlocker()) return false;
     window.history[replace ? 'replaceState' : 'pushState'](null, '', to);
     window.dispatchEvent(new Event(NAVIGATE_EVENT));
   }
   // 'instant' menimpa scroll-behavior: smooth dari CSS global IDDS.
   if (scroll) window.scrollTo({ top: 0, behavior: 'instant' });
+  return true;
 }
 
 export function useLocation() {
@@ -84,8 +110,7 @@ export function Link({ to, onClick, onNavigate, children, ...rest }: LinkProps) 
     if (event.defaultPrevented || opensElsewhere) return;
 
     event.preventDefault();
-    navigate(to);
-    onNavigate?.();
+    if (navigate(to)) onNavigate?.();
   };
 
   return (

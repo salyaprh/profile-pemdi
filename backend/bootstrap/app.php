@@ -8,6 +8,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -33,4 +34,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+        // Pesan bawaan Gate/Policy ("This action is unauthorized.") diganti bahasa Indonesia; pesan
+        // 403 khusus dari abort(403, '...') dibiarkan.
+        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
+            if ($request->is('api/*') && $e->getMessage() === 'This action is unauthorized.') {
+                return response()->json(['message' => 'Anda tidak memiliki akses untuk tindakan ini.'], 403);
+            }
+
+            return null;
+        });
     })->create();

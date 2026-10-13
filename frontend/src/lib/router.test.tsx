@@ -49,7 +49,9 @@ describe('useLocation', () => {
   it('merender ulang saat navigate() dipanggil', () => {
     const { result } = renderHook(() => useLocation());
     expect(result.current.pathname).toBe('/');
-    act(() => navigate('/contact'));
+    act(() => {
+      navigate('/contact');
+    });
     expect(result.current.pathname).toBe('/contact');
     expect(window.location.pathname).toBe('/contact');
   });

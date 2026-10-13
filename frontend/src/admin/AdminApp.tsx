@@ -2,14 +2,31 @@ import { useState } from 'react';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { paths, useLocation } from '../lib/router';
 import AdminLayout from './AdminLayout';
-import DashboardPage from './pages/DashboardPage';
+import { useAuthenticatedUser } from './auth';
+import AdminForbiddenPage from './pages/AdminForbiddenPage';
 import AdminNotFoundPage from './pages/AdminNotFoundPage';
+import ArticleEditorPage from './pages/ArticleEditorPage';
+import ArticleListPage from './pages/ArticleListPage';
+import CategoriesPage from './pages/CategoriesPage';
+import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import { createAdminQueryClient } from './queryClient';
 import RequireAuth from './RequireAuth';
 
-function renderAdminRoute(pathname: string) {
+function AdminRoute({ pathname }: { pathname: string }) {
+  const user = useAuthenticatedUser();
+
   if (pathname === paths.admin) return <DashboardPage />;
+  if (pathname === paths.adminArticles) return <ArticleListPage />;
+  if (pathname === paths.adminArticleNew) return <ArticleEditorPage articleId={null} />;
+
+  const articleMatch = pathname.match(/^\/admin\/artikel\/(\d+)$/);
+  if (articleMatch) return <ArticleEditorPage articleId={Number(articleMatch[1])} />;
+
+  if (pathname === paths.adminCategories) {
+    return user.role === 'admin' ? <CategoriesPage /> : <AdminForbiddenPage />;
+  }
+
   return <AdminNotFoundPage />;
 }
 
@@ -20,7 +37,9 @@ function AdminRoutes() {
 
   return (
     <RequireAuth>
-      <AdminLayout>{renderAdminRoute(pathname)}</AdminLayout>
+      <AdminLayout>
+        <AdminRoute pathname={pathname} />
+      </AdminLayout>
     </RequireAuth>
   );
 }

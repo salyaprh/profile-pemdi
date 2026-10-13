@@ -1,4 +1,4 @@
-import { IconLayoutDashboard, type Icon } from '@tabler/icons-react';
+import { IconArticle, IconCategory, IconLayoutDashboard, type Icon } from '@tabler/icons-react';
 import { isAdminPath, paths } from '../lib/router';
 import type { AdminRole } from './auth';
 
@@ -12,13 +12,27 @@ export interface AdminNavItem {
   roles?: AdminRole[];
 }
 
-// Menu ditambah per fase (Artikel, Kategori, Pesan, Pengguna, Pengaturan, Aktivitas).
+// Menu ditambah per fase (berikutnya: Pesan, Pengguna, Pengaturan, Aktivitas).
 export const adminNavItems: AdminNavItem[] = [
   {
     label: 'Dasbor',
     to: paths.admin,
     icon: IconLayoutDashboard,
     isActive: (pathname) => pathname === paths.admin,
+  },
+  {
+    label: 'Artikel',
+    to: paths.adminArticles,
+    icon: IconArticle,
+    isActive: (pathname) =>
+      pathname === paths.adminArticles || pathname.startsWith(`${paths.adminArticles}/`),
+  },
+  {
+    label: 'Kategori',
+    to: paths.adminCategories,
+    icon: IconCategory,
+    isActive: (pathname) => pathname === paths.adminCategories,
+    roles: ['admin'],
   },
 ];
 

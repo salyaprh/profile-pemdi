@@ -74,7 +74,9 @@ function send(path: string, method: Method, body: unknown, signal?: AbortSignal)
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
   };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  // FormData (unggah berkas): browser yang mengisi Content-Type beserta boundary-nya.
+  const isForm = body instanceof FormData;
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
 
   const token = readCookie(XSRF_COOKIE);
   if (method !== 'GET' && token) headers['X-XSRF-TOKEN'] = token;
@@ -82,7 +84,7 @@ function send(path: string, method: Method, body: unknown, signal?: AbortSignal)
   return fetch(path, {
     method,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     credentials: 'same-origin',
     signal,
   });

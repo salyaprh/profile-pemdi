@@ -7,6 +7,16 @@ import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
 import { clearCookies, server } from './server';
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+
+// ProseMirror (editor TipTap) mengukur posisi teks lewat Range dan elementFromPoint, yang tidak
+// diimplementasikan jsdom. Nilai kosong cukup: uji tidak bergantung pada tata letak.
+if (typeof Range.prototype.getClientRects !== 'function') {
+  Range.prototype.getClientRects = () => [] as unknown as DOMRectList;
+  Range.prototype.getBoundingClientRect = () => new DOMRect();
+}
+if (typeof document.elementFromPoint !== 'function') {
+  document.elementFromPoint = () => null;
+}
 afterAll(() => server.close());
 
 beforeEach(() => {
