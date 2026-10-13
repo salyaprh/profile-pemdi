@@ -69,11 +69,17 @@
  * Perbaikan WCAG 2.2 AA pada komponen IDDS (hasil audit axe, dicakup e2e/a11y.spec.ts):
  * - pesan error memakai #f02d2d di atas putih = 4,1:1 (butuh 4,5:1): pakai negative-600;
  * - hover/fokus tombol primer menjadi LEBIH TERANG (4,3-4,4:1 dengan teks putih): gelapkan;
- * - kolom input dan tombol hapus (x) lebih kecil dari target minimum 24px (WCAG 2.5.8).
+ * - kolom input dan tombol hapus (x) lebih kecil dari target minimum 24px (WCAG 2.5.8);
+ * - Badge soft "brand": teks primary di atas primary-100 = 3,56:1 pada 12px: pakai primary-700 (8,1:1).
  */
 [class*='helper-text--err'],
-.ina-text-field .ina-text-field__helper-text[class*='--err'] {
+.ina-text-field .ina-text-field__helper-text[class*='--err'],
+.ina-password-input .ina-password-input__status-message.ina-password-input__status-message--error {
   color: var(--color-negative-600);
+}
+
+.ina-badge--soft.ina-badge--brand {
+  color: var(--color-primary-700);
 }
 
 .ina-button--primary:hover:not(:disabled),

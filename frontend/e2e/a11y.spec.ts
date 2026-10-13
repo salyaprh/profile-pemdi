@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { audit } from './a11y.helper';
+import { fillLogin, loginAs } from './admin.helper';
 import { expect, test } from './fixtures';
 import { openSearch } from './helpers';
 
@@ -76,4 +77,37 @@ test('axe: panel pencarian tanpa hasil', async ({ page, isMobile }) => {
   await expect(page.getByText(/Tidak ada hasil untuk/)).toBeVisible();
 
   expect(await audit(page)).toEqual([]);
+});
+
+test.describe('panel admin', () => {
+  test('axe: halaman Masuk', async ({ page }) => {
+    await ready(page, '/admin/masuk');
+    expect(await audit(page)).toEqual([]);
+  });
+
+  test('axe: halaman Masuk dengan pesan error', async ({ page, problems }) => {
+    problems.allowConsoleErrors.push(/status of 422/);
+    await ready(page, '/admin/masuk');
+    await page.getByRole('button', { name: 'Masuk' }).click();
+    await expect(page.getByText('Email wajib diisi')).toBeVisible();
+    expect(await audit(page)).toEqual([]);
+
+    // Email berbeda dari admin.spec.ts agar batas percobaan login per akun tidak saling memengaruhi.
+    await fillLogin(page, 'akun-uji-a11y@pemdi.test', 'BukanKataSandi123');
+    await expect(page.getByRole('alert')).toBeVisible();
+    expect(await audit(page)).toEqual([]);
+  });
+
+  test('axe: dasbor Admin', async ({ page }) => {
+    await loginAs(page, 'admin');
+    await expect(page.getByRole('region', { name: 'Aktivitas terbaru' })).toBeVisible();
+    expect(await audit(page)).toEqual([]);
+  });
+
+  test('axe: halaman admin tidak ditemukan', async ({ page }) => {
+    await loginAs(page, 'admin');
+    await page.goto('/admin/tidak-ada');
+    await expect(page.getByText('Halaman admin tidak ditemukan')).toBeVisible();
+    expect(await audit(page)).toEqual([]);
+  });
 });

@@ -12,3 +12,6 @@ parameters:
 
     # Level 6: tipe parameter/kembalian wajib dideklarasikan. Naikkan bertahap bila kode sudah stabil.
     level: 6
+
+    # Baca isi method casts() model (enum/datetime), bukan hanya PHPDoc array<string, string>-nya.
+    parseModelCastsMethod: true

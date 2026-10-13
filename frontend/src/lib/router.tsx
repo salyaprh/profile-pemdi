@@ -11,7 +11,14 @@ export const paths = {
   portfolio: '/portfolio',
   article: (id: string) => `/portfolio/${encodeURIComponent(id)}`,
   contact: '/contact',
+  admin: '/admin',
+  adminLogin: '/admin/masuk',
 } as const;
+
+/** Semua path di bawah /admin milik panel CMS (dimuat terpisah, tanpa header/footer situs). */
+export function isAdminPath(pathname: string): boolean {
+  return pathname === paths.admin || pathname.startsWith(`${paths.admin}/`);
+}
 
 const NAVIGATE_EVENT = 'app:navigate';
 
