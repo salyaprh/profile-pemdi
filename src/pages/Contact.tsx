@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Button, PhoneInput, TextArea, TextField, useToast } from '@idds/react';
-import { usePageTitle } from '../lib/router';
+import { paths } from '../lib/router';
+import { usePageMeta } from '../lib/seo';
 import {
   MESSAGE_MAX_LENGTH,
   validateEmail,
@@ -34,7 +35,11 @@ const emptyValues: ContactMessage = {
 };
 
 export default function Contact() {
-  usePageTitle('Hubungi kami');
+  usePageMeta({
+    title: 'Hubungi kami',
+    description: 'Sampaikan pertanyaan, masukan, atau ajakan kolaborasi Anda kepada tim PEMDI.',
+    path: paths.contact,
+  });
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 

@@ -3,10 +3,11 @@ import ArticleCard from '../components/ArticleCard';
 import ButtonLink from '../components/ButtonLink';
 import { articles } from '../data/articlesData';
 import { heroStats } from '../data/siteContent';
-import { paths, usePageTitle } from '../lib/router';
+import { paths } from '../lib/router';
+import { usePageMeta } from '../lib/seo';
 
 export default function Home() {
-  usePageTitle('Beranda');
+  usePageMeta({ title: 'Pemerintah Digital', path: paths.home });
   const featuredArticles = articles.slice(0, 3);
 
   return (

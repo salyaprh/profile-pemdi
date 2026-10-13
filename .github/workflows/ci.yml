@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Hak minimum: workflow ini hanya membaca kode.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Action di-pin ke commit SHA (bukan tag yang bisa digeser). Dependabot memperbaruinya.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependency sesuai lockfile
+        run: npm ci
+
+      # Hanya dependency produksi: kerentanan di tooling dev tidak ikut ke situs.
+      - name: Audit dependency produksi
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Type-check dan build
+        run: npm run build
+
+      - name: Pastikan bundle tidak memuat font dari pihak ketiga
+        run: |
+          if grep -rIlE "fonts\.(googleapis|gstatic)\.com" dist; then
+            echo "::error::Bundle masih merujuk Google Fonts. Periksa vite-plugins/selfHostFonts.ts."
+            exit 1
+          fi

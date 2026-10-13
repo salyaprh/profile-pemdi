@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useMemo,
   useSyncExternalStore,
   type AnchorHTMLAttributes,
@@ -97,11 +96,4 @@ export function Link({ to, onClick, onNavigate, children, ...rest }: LinkProps) 
       {children}
     </a>
   );
-}
-
-/** Mengatur <title> dokumen sesuai halaman aktif. */
-export function usePageTitle(title: string) {
-  useEffect(() => {
-    document.title = `${title} | PEMDI PANRB`;
-  }, [title]);
 }

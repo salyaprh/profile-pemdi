@@ -1,5 +1,6 @@
 import ButtonLink from '../components/ButtonLink';
-import { paths, usePageTitle } from '../lib/router';
+import { paths } from '../lib/router';
+import { usePageMeta } from '../lib/seo';
 
 interface NotFoundProps {
   title?: string;
@@ -11,7 +12,7 @@ export default function NotFound({
   title = '404: Halaman tidak ditemukan',
   description = 'Maaf, halaman yang Anda cari tidak tersedia. Halaman tersebut mungkin telah dipindahkan atau tidak lagi dapat diakses.',
 }: NotFoundProps) {
-  usePageTitle('Halaman tidak ditemukan');
+  usePageMeta({ title: 'Halaman tidak ditemukan', noindex: true });
 
   return (
     <section className="mx-auto flex max-w-[1240px] flex-col items-center gap-6 px-5 py-20 text-center lg:py-28">

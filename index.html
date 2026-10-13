@@ -8,6 +8,21 @@
       name="description"
       content="PEMDI PANRB merangkum karya dan inisiatif Tim Digital Pemerintah (TDP) dalam membangun layanan pemerintah yang terintegrasi dan berpusat pada masyarakat."
     />
+    <!--
+      Meta statis tingkat situs untuk crawler yang tidak menjalankan JS (mis. pratinjau tautan).
+      canonical/og:url sengaja tidak di sini: HTML yang sama dilayani untuk semua path, jadi
+      nilai statis akan salah. Keduanya diisi per halaman oleh src/lib/seo.ts.
+      og:image belum ada: butuh aset 1200x630 resmi.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PEMDI PANRB" />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:title" content="PEMDI PANRB - Pemerintah Digital" />
+    <meta
+      property="og:description"
+      content="PEMDI merangkum karya dan inisiatif Tim Digital Pemerintah (TDP) dalam membangun layanan pemerintah yang terintegrasi dan berpusat pada masyarakat."
+    />
+    <meta name="twitter:card" content="summary" />
     <title>PEMDI PANRB - Pemerintah Digital</title>
   </head>
   <body>

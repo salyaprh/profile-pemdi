@@ -38,6 +38,19 @@
   --text-caption-sm--line-height: 1rem;
 }
 
+/*
+ * Keyframes untuk komponen Skeleton IDDS. @idds/react menyisipkannya lewat <style> runtime,
+ * yang bisa diblokir CSP ketat; definisi ini memastikan animasi tetap berjalan.
+ */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 /* Fokus keyboard yang konsisten dan terlihat (WCAG 2.2 AA) */
 :where(a, button, [tabindex]):focus-visible {
   outline: 2px solid var(--color-guide-500);
