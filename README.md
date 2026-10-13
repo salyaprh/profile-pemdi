@@ -25,6 +25,8 @@ cd backend && composer setup && php artisan db:seed && composer dev   # API di h
 cd frontend && npm install && npm run dev                             # situs di http://localhost:5173
 ```
 
+Backend wajib berjalan: situs publik juga mengambil artikel, kategori, dan formulir kontak dari API.
+
 Panel admin ada di `http://localhost:5173/admin`. Akun demo lokal dijelaskan di [README backend](backend/README.md#menjalankan). Masuk sebagai Penulis untuk menulis dan mengajukan artikel, lalu sebagai Admin untuk meninjau dan menerbitkannya.
 
 ## Rencana CMS
@@ -36,6 +38,6 @@ Dikerjakan bertahap, satu PR per fase:
 | 0    | Monorepo `frontend/` + `backend/`, kerangka Laravel, CI backend                                              | Selesai    |
 | 1    | Database, login (sesi cookie + CSRF), peran Admin dan Penulis, log aktivitas, halaman Masuk dan dasbor admin | Selesai    |
 | 2    | CRUD artikel dan kategori dengan editor WYSIWYG (TipTap), unggah gambar, alur tinjauan                       | Selesai    |
-| 3    | Situs publik membaca konten dari database; formulir kontak tersimpan di kotak masuk admin                    | Berikutnya |
-| 4    | Pengelolaan pengguna, pengaturan situs, halaman log aktivitas                                                |            |
+| 3    | Situs publik membaca konten dari database; formulir kontak tersimpan di kotak masuk admin                    | Selesai    |
+| 4    | Pengelolaan pengguna, pengaturan situs, halaman log aktivitas                                                | Berikutnya |
 | 5    | Siap dipasang di server PANRB: Nginx, header keamanan, pratinjau tautan, panduan deploy                      |            |

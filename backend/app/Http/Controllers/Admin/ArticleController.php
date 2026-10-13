@@ -8,6 +8,7 @@ use App\Http\Requests\ArticleRequest;
 use App\Http\Resources\AdminArticleResource;
 use App\Models\ActivityLog;
 use App\Models\Article;
+use App\Support\LikePattern;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -52,7 +53,7 @@ class ArticleController extends Controller
 
         $search = trim($request->string('cari')->value());
         if ($search !== '') {
-            $query->where('title', 'like', '%'.addcslashes($search, '\\%_').'%');
+            LikePattern::whereAnyContains($query, ['title'], $search);
         }
 
         $articles = $query->latest('updated_at')->latest('id')->paginate(self::PER_PAGE)->withQueryString();

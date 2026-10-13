@@ -14,12 +14,7 @@ export default defineConfig(({ mode }) => {
   );
 
   return {
-    plugins: [
-      react(),
-      tailwindcss(),
-      selfHostFonts(),
-      seo({ siteUrl: env.VITE_SITE_URL }),
-    ],
+    plugins: [react(), tailwindcss(), selfHostFonts(), seo({ siteUrl: env.VITE_SITE_URL })],
     // Backend Laravel (composer dev) di-proxy agar satu origin seperti di produksi: cookie sesi dan
     // CSRF berlaku tanpa CORS. Atur BACKEND_URL bila server API tidak di port 8000.
     server: { proxy: backendProxy },

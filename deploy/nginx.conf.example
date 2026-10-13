@@ -3,8 +3,8 @@
 # sebelum dipakai. Sesuaikan server_name, jalur sertifikat, dan root.
 #
 # Sumber kebenaran header adalah public/_headers (Cloudflare Pages/Netlify). Bila diubah di sana,
-# ubah juga di sini. Bila VITE_CONTACT_ENDPOINT mengarah ke origin lain, tambahkan origin itu ke
-# connect-src; endpoint se-origin (mis. /api/contact) tidak butuh perubahan CSP.
+# ubah juga di sini. Semua API disajikan se-origin di bawah /api (Laravel), jadi connect-src 'self'
+# sudah cukup. Konfigurasi lengkap untuk Laravel (PHP-FPM, /storage, /sitemap.xml) menyusul di Fase 5.
 
 server {
     listen 80;

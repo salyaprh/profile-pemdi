@@ -7,8 +7,8 @@
 # - SPA fallback: Cloudflare Pages otomatis melayani index.html untuk path tak dikenal
 #   selama TIDAK ada 404.html di root. Jangan menambahkan 404.html.
 #
-# CSP: connect-src hanya 'self'. Bila VITE_CONTACT_ENDPOINT mengarah ke origin lain, tambahkan origin
-# itu ke connect-src; lebih baik memakai endpoint se-origin (mis. /api/contact) agar CSP tetap ketat.
+# CSP: connect-src hanya 'self'. Semua API (artikel, kategori, formulir kontak, panel admin)
+# disajikan Laravel dari origin yang sama di bawah /api, jadi CSP tidak perlu dilonggarkan.
 # style-src-attr 'unsafe-inline' dibutuhkan atribut style="..." bawaan komponen/React (bukan <style>).
 # Hash di style-src: @idds/react menyisipkan <style id="skeleton-shimmer-keyframes"> saat runtime
 # (animasi komponen Skeleton). Hash itu hanya mengizinkan isi style tersebut, bukan style lain.

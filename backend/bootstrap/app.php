@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SitemapController;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\PreventCaching;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
@@ -15,11 +16,16 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
-        // API hanya dipakai frontend sendiri dari origin yang sama, jadi memakai grup `web`:
-        // sesi dalam cookie HttpOnly dan token CSRF (header X-XSRF-TOKEN), tanpa token di
-        // localStorage dan tanpa CORS.
+        // API hanya dipakai frontend sendiri dari origin yang sama. Login dan panel admin memakai
+        // grup `web`: sesi dalam cookie HttpOnly dan token CSRF (header X-XSRF-TOKEN), tanpa token
+        // di localStorage dan tanpa CORS.
         then: function (): void {
             Route::middleware('web')->prefix('api')->group(base_path('routes/api.php'));
+            // API situs publik: grup `api` (tanpa sesi, cookie, dan CSRF). Lihat routes/public.php.
+            Route::middleware('api')->prefix('api')->group(base_path('routes/public.php'));
+            // Sitemap dari artikel terbit; di produksi Nginx meneruskan /sitemap.xml ke Laravel.
+            Route::get('sitemap.xml', SitemapController::class)
+                ->middleware(['throttle:public', 'cache.headers:public;max_age=3600;etag']);
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

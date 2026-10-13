@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures';
-import { openSearch } from './helpers';
+import { openSearch, seeded } from './helpers';
 
 const SITE = 'https://pemdi.example.go.id';
 
@@ -18,7 +18,7 @@ test('dokumen dilayani dengan seluruh header keamanan', async ({ page }) => {
 });
 
 test('rute SPA (fallback) juga membawa header keamanan, bukan hanya "/"', async ({ request }) => {
-  for (const path of ['/portfolio/3', '/contact', '/halaman-ngawur']) {
+  for (const path of [`/portfolio/${seeded.serviceArticle.slug}`, '/contact', '/halaman-ngawur']) {
     const response = await request.get(path);
     expect(response.headers()['content-security-policy'], path).toContain("default-src 'self'");
   }
@@ -103,7 +103,13 @@ test('tidak ada permintaan ke origin lain di seluruh halaman dan interaksi utama
   isMobile,
   problems,
 }) => {
-  for (const path of ['/', '/portfolio', '/portfolio/3', '/contact', '/halaman-ngawur']) {
+  for (const path of [
+    '/',
+    '/portfolio',
+    `/portfolio/${seeded.serviceArticle.slug}`,
+    '/contact',
+    '/halaman-ngawur',
+  ]) {
     await page.goto(path);
     // eslint-disable-next-line playwright/no-networkidle
     await page.waitForLoadState('networkidle');
@@ -132,16 +138,32 @@ test('robots.txt menunjuk ke sitemap absolut', async ({ request }) => {
   expect(text).toContain(`Sitemap: ${SITE}/sitemap.xml`);
 });
 
-test('sitemap.xml memuat semua halaman (3 statis + 36 artikel) dengan URL absolut', async ({
+test('sitemap.xml dari backend memuat halaman statis dan artikel terbit dengan URL absolut', async ({
   request,
 }) => {
   const response = await request.get('/sitemap.xml');
   expect(response.status()).toBe(200);
+  expect(response.headers()['content-type']).toContain('application/xml');
+  expect(response.headers()['set-cookie']).toBeUndefined();
   const locs = [...(await response.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
 
-  expect(locs).toHaveLength(39);
+  // 3 halaman statis + 36 artikel placeholder (+ artikel yang diterbitkan uji lain).
+  expect(locs.length).toBeGreaterThanOrEqual(39);
   expect(locs.every((loc) => loc.startsWith(`${SITE}/`))).toBe(true);
   expect(locs).toContain(`${SITE}/`);
-  expect(locs).toContain(`${SITE}/portfolio/36`);
+  expect(locs).toContain(`${SITE}/portfolio/${seeded.serviceArticle.slug}`);
   expect(new Set(locs).size).toBe(locs.length);
+});
+
+test('API publik tanpa cookie dan tanpa CORS; artikel draf tidak bocor', async ({ request }) => {
+  const list = await request.get('/api/articles?per_page=24');
+  expect(list.status()).toBe(200);
+  expect(list.headers()['set-cookie']).toBeUndefined();
+  expect(list.headers()['access-control-allow-origin']).toBeUndefined();
+  expect(list.headers()['x-content-type-options']).toBe('nosniff');
+  const body = (await list.json()) as { data: Record<string, unknown>[] };
+  expect(Object.keys(body.data[0]).sort()).toEqual(
+    ['author', 'category', 'cover_url', 'excerpt', 'published_at', 'slug', 'title'].sort(),
+  );
+  expect(JSON.stringify(body)).not.toContain('@');
 });

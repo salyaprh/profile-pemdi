@@ -2,13 +2,13 @@ import type { Page } from '@playwright/test';
 import { audit } from './a11y.helper';
 import { fillLogin, loginAs } from './admin.helper';
 import { expect, test } from './fixtures';
-import { openSearch } from './helpers';
+import { openSearch, seeded } from './helpers';
 
 const pages = [
   ['beranda', '/'],
   ['portofolio', '/portfolio'],
-  ['portofolio terfilter', '/portfolio?kategori=Layanan+Publik&halaman=2'],
-  ['detail artikel', '/portfolio/3'],
+  ['portofolio terfilter', '/portfolio?kategori=layanan-publik&halaman=2'],
+  ['detail artikel', `/portfolio/${seeded.serviceArticle.slug}`],
   ['kontak', '/contact'],
   ['404', '/halaman-ngawur'],
   ['artikel tidak ditemukan', '/portfolio/999'],
@@ -17,11 +17,15 @@ const pages = [
 async function ready(page: Page, path: string) {
   await page.goto(path);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  // Data dari API sudah tampil (kerangka kartu/artikel sudah hilang).
+  await expect(page.getByText(/^Memuat artikel/)).toHaveCount(0);
   await page.evaluate(() => document.fonts.ready);
 }
 
 for (const [name, path] of pages) {
-  test(`axe WCAG 2.2 AA: ${name}`, async ({ page }) => {
+  test(`axe WCAG 2.2 AA: ${name}`, async ({ page, problems }) => {
+    // Artikel tidak ditemukan = respons 404 dari API, yang dicatat browser sebagai error konsol.
+    problems.allowConsoleErrors.push(/status of 404/);
     await ready(page, path);
     expect(await audit(page)).toEqual([]);
   });

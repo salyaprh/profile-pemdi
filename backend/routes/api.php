@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\ArticleWorkflowController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\AuthController;
@@ -46,5 +47,13 @@ Route::middleware('no-store')->group(function () {
         });
 
         Route::post('media', [MediaController::class, 'store'])->middleware('throttle:30,1');
+
+        // Kotak masuk formulir "Hubungi kami".
+        Route::middleware('can:admin')->whereNumber('message')->group(function () {
+            Route::get('messages', [ContactMessageController::class, 'index']);
+            Route::get('messages/{message}', [ContactMessageController::class, 'show']);
+            Route::patch('messages/{message}', [ContactMessageController::class, 'update']);
+            Route::delete('messages/{message}', [ContactMessageController::class, 'destroy']);
+        });
     });
 });

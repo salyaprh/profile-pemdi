@@ -9,3 +9,22 @@ export async function openSearch(page: Page, isMobile: boolean) {
   if (isMobile) await page.getByRole('button', { name: 'Buka menu' }).click();
   return page.getByRole('textbox', { name: 'Cari artikel portofolio' });
 }
+
+/**
+ * Artikel placeholder dari seeder backend (database e2e). Uji lain bisa menerbitkan artikel baru
+ * di kategori Layanan Publik secara paralel, jadi uji yang menghitung jumlah artikel memakai
+ * kategori Panduan Pengguna (11 artikel) atau pola angka.
+ */
+export const seeded = {
+  /** Kategori Layanan Publik. */
+  serviceArticle: {
+    slug: 'mulai-2025-informasi-layanan-publik-terpusat-di-inagov',
+    title: 'Mulai 2025, Informasi Layanan Publik Terpusat di INAgov',
+  },
+  /** Kategori Kebijakan & Regulasi. */
+  policyArticle: {
+    slug: 'pemerintah-perkuat-layanan-digital-asn-melalui-integrasi-inagov',
+    title: 'Pemerintah Perkuat Layanan Digital ASN Melalui Integrasi INAgov',
+  },
+  guideCount: 11,
+} as const;

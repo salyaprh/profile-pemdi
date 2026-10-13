@@ -21,7 +21,7 @@ test('klik hasil membuka artikel dan membersihkan kolom', async ({ page, isMobil
   await input.fill('transparansi');
   await page.getByRole('link', { name: /Dorong Transparansi/ }).click();
 
-  await expect(page).toHaveURL(/\/portfolio\/\d+$/);
+  await expect(page).toHaveURL('/portfolio/inagov-dorong-transparansi-informasi-pemerintahan');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Transparansi');
 });
 
@@ -31,7 +31,7 @@ test('Enter membuka hasil pertama', async ({ page, isMobile }) => {
   await expect(page.getByText('2 hasil pencarian')).toBeVisible();
   await input.press('Enter');
 
-  await expect(page).toHaveURL(/\/portfolio\/\d+$/);
+  await expect(page).toHaveURL(/\/portfolio\/[a-z0-9-]+$/);
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Transparansi');
 });
 
