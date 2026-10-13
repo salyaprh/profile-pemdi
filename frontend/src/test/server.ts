@@ -1,10 +1,12 @@
 import { setupServer } from 'msw/node';
+import { publicHandlers } from './publicApi';
 
 /**
- * Server API tiruan (MSW) untuk uji: setiap uji memasang handler sendiri dengan server.use().
- * Permintaan tanpa handler membuat uji gagal, jadi tidak ada panggilan jaringan yang lolos diam-diam.
+ * Server API tiruan (MSW) untuk uji. API publik (artikel, kategori) tersedia bawaan; selebihnya
+ * setiap uji memasang handler sendiri dengan server.use(). Permintaan tanpa handler membuat uji
+ * gagal, jadi tidak ada panggilan jaringan yang lolos diam-diam.
  */
-export const server = setupServer();
+export const server = setupServer(...publicHandlers);
 
 /** Mengatur cookie XSRF-TOKEN seperti yang dipasang backend Laravel. */
 export function setXsrfCookie(token: string) {

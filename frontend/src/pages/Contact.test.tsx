@@ -1,12 +1,37 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
-import { sendContactMessage } from '../services/contact';
-import { renderWithToast } from '../test/utils';
+import { delay, http, HttpResponse } from 'msw';
+import { describe, expect, it } from 'vitest';
+import { server } from '../test/server';
+import { renderPublic as renderWithToast } from '../test/utils';
 import Contact from './Contact';
 
-vi.mock('../services/contact', () => ({ sendContactMessage: vi.fn() }));
-const send = vi.mocked(sendContactMessage);
+interface SentBody {
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  token: string;
+  kolom_khusus: string;
+}
+
+/** Backend kontak tiruan: mencatat isi setiap POST dan menjawab sesuai `respond`. */
+function mockContactApi(
+  respond: () => Response | Promise<Response> = () =>
+    HttpResponse.json({ message: 'Pesan diterima.' }, { status: 202 }),
+) {
+  const sent: SentBody[] = [];
+  const headers: Headers[] = [];
+  server.use(
+    http.post('/api/contact', async ({ request }) => {
+      sent.push((await request.json()) as SentBody);
+      headers.push(request.headers);
+      return respond();
+    }),
+  );
+  return { sent, headers };
+}
 
 const field = (label: RegExp | string) => screen.getByLabelText(label);
 const submit = () => screen.getByRole('button', { name: /Kirim pesan|Mengirim/ });
@@ -53,7 +78,6 @@ describe('Contact (Hubungi kami)', () => {
       expect(screen.getByText('Email wajib diisi')).toBeInTheDocument();
       expect(screen.getByText('Subjek wajib diisi')).toBeInTheDocument();
       expect(screen.getByText('Pesan wajib diisi')).toBeInTheDocument();
-      expect(send).not.toHaveBeenCalled();
       expect(field(/Nama lengkap/)).toHaveFocus();
     });
 
@@ -121,8 +145,8 @@ describe('Contact (Hubungi kami)', () => {
   });
 
   describe('pengiriman', () => {
-    it('berhasil: mengirim payload, menampilkan toast sukses, dan mengosongkan form', async () => {
-      send.mockResolvedValue('sent');
+    it('berhasil: mengirim payload beserta token formulir, toast sukses, dan mengosongkan form', async () => {
+      const { sent } = mockContactApi();
       const user = userEvent.setup();
       renderWithToast(<Contact />);
       await fillValid(user);
@@ -130,22 +154,54 @@ describe('Contact (Hubungi kami)', () => {
       await user.click(submit());
 
       expect(await screen.findByText('Pesan terkirim')).toBeInTheDocument();
-      expect(send).toHaveBeenCalledOnce();
-      expect(send).toHaveBeenCalledWith({
-        name: 'Budi Santoso',
-        email: 'budi@instansi.go.id',
-        phone: '',
-        subject: 'Kolaborasi program',
-        message: 'Halo, kami ingin berdiskusi terkait kolaborasi program.',
-      });
+      expect(sent).toEqual([
+        {
+          name: 'Budi Santoso',
+          email: 'budi@instansi.go.id',
+          phone: '',
+          subject: 'Kolaborasi program',
+          message: 'Halo, kami ingin berdiskusi terkait kolaborasi program.',
+          token: 'token-formulir-uji',
+          kolom_khusus: '',
+        },
+      ]);
       for (const label of [/Nama lengkap/, /^Email/, /Subjek/, /^Pesan/]) {
         expect(field(label)).toHaveValue('');
       }
       expect(screen.queryByText('Nama lengkap wajib diisi')).not.toBeInTheDocument();
     });
 
+    it('tanpa sesi: tidak meminta cookie CSRF dan tidak mengirim header X-XSRF-TOKEN', async () => {
+      const csrfRequests: string[] = [];
+      server.use(
+        http.get('/api/csrf', ({ request }) => {
+          csrfRequests.push(request.url);
+          return new HttpResponse(null, { status: 204 });
+        }),
+      );
+      const { headers } = mockContactApi();
+      const user = userEvent.setup();
+      renderWithToast(<Contact />);
+      await fillValid(user);
+
+      await user.click(submit());
+
+      await screen.findByText('Pesan terkirim');
+      expect(csrfRequests).toEqual([]);
+      expect(headers[0].get('X-XSRF-TOKEN')).toBeNull();
+    });
+
+    it('kolom jebakan bot tersembunyi dari pengguna, keyboard, dan pembaca layar', () => {
+      const { container } = renderWithToast(<Contact />);
+      const honeypot = container.querySelector('input[name="kolom_khusus"]');
+      expect(honeypot).toHaveAttribute('tabindex', '-1');
+      expect(honeypot).toHaveAttribute('autocomplete', 'off');
+      expect(honeypot?.closest('[aria-hidden="true"]')).not.toBeNull();
+      expect(screen.queryByRole('textbox', { name: /Jangan isi/ })).not.toBeInTheDocument();
+    });
+
     it('mengirim nomor ponsel dalam format internasional bila diisi', async () => {
-      send.mockResolvedValue('sent');
+      const { sent } = mockContactApi();
       const user = userEvent.setup();
       renderWithToast(<Contact />);
       await fillValid(user);
@@ -153,13 +209,12 @@ describe('Contact (Hubungi kami)', () => {
 
       await user.click(submit());
 
-      await waitFor(() => expect(send).toHaveBeenCalledOnce());
-      const [payload] = send.mock.calls[0];
-      expect(payload.phone).toMatch(/^\+62\d{9,13}$/);
+      await waitFor(() => expect(sent).toHaveLength(1));
+      expect(sent[0].phone).toMatch(/^\+62\d{9,13}$/);
     });
 
     it('nomor yang diketik lalu dihapus (PhoneInput kembali ke "+62") dikirim sebagai string kosong', async () => {
-      send.mockResolvedValue('sent');
+      const { sent } = mockContactApi();
       const user = userEvent.setup();
       renderWithToast(<Contact />);
       await fillValid(user);
@@ -169,12 +224,13 @@ describe('Contact (Hubungi kami)', () => {
       await user.type(phone, '{Backspace}{Backspace}'); // kembali ke "+62" (hanya kode negara)
       await user.click(submit());
 
-      await waitFor(() => expect(send).toHaveBeenCalledOnce());
-      expect(send.mock.calls[0][0].phone).toBe('');
+      await waitFor(() => expect(sent).toHaveLength(1));
+      expect(sent[0].phone).toBe('');
       expect(screen.queryByText(/Nomor ponsel harus/)).not.toBeInTheDocument();
     });
 
     it('nomor ponsel yang terlalu pendek ditolak dan tidak dikirim', async () => {
+      const { sent } = mockContactApi();
       const user = userEvent.setup();
       renderWithToast(<Contact />);
       await fillValid(user);
@@ -183,24 +239,72 @@ describe('Contact (Hubungi kami)', () => {
       await user.click(submit());
 
       expect(await screen.findByText('Nomor ponsel harus 10-15 digit angka')).toBeInTheDocument();
-      expect(send).not.toHaveBeenCalled();
+      expect(sent).toEqual([]);
     });
 
-    it('endpoint belum diset: memberi tahu pesan belum dikirim dan mempertahankan isian', async () => {
-      send.mockResolvedValue('not-configured');
+    it('galat validasi dari server tampil di kolomnya dan kolom itu difokuskan', async () => {
+      mockContactApi(() =>
+        HttpResponse.json(
+          { message: 'Data tidak valid.', errors: { subject: ['Subjek maksimal 150 karakter'] } },
+          { status: 422 },
+        ),
+      );
       const user = userEvent.setup();
       renderWithToast(<Contact />);
       await fillValid(user);
 
       await user.click(submit());
 
-      expect(await screen.findByText('Formulir belum terhubung ke server')).toBeInTheDocument();
+      expect(await screen.findByText('Subjek maksimal 150 karakter')).toBeInTheDocument();
+      expect(field(/Subjek/)).toHaveFocus();
       expect(screen.queryByText('Pesan terkirim')).not.toBeInTheDocument();
+    });
+
+    it('token formulir kedaluwarsa: toast dengan pesan server dan token baru diambil', async () => {
+      let tokenRequests = 0;
+      server.use(
+        http.get('/api/contact/token', () => {
+          tokenRequests += 1;
+          return HttpResponse.json({ token: `token-${tokenRequests}` });
+        }),
+      );
+      const { sent } = mockContactApi(() =>
+        HttpResponse.json(
+          {
+            message: 'Formulir kedaluwarsa.',
+            errors: { token: ['Formulir kedaluwarsa. Kirim ulang pesan Anda.'] },
+          },
+          { status: 422 },
+        ),
+      );
+      const user = userEvent.setup();
+      renderWithToast(<Contact />);
+      await fillValid(user);
+
+      await user.click(submit());
+
+      expect(await screen.findByText('Formulir perlu dimuat ulang')).toBeInTheDocument();
+      expect(screen.getByText('Formulir kedaluwarsa. Kirim ulang pesan Anda.')).toBeInTheDocument();
+      expect(sent[0].token).toBe('token-1');
+      await waitFor(() => expect(tokenRequests).toBe(2));
       expect(field(/Nama lengkap/)).toHaveValue('Budi Santoso');
     });
 
+    it('terlalu sering (429): pesan yang menjelaskan batasnya', async () => {
+      mockContactApi(() => HttpResponse.json({ message: 'Too Many Attempts.' }, { status: 429 }));
+      const user = userEvent.setup();
+      renderWithToast(<Contact />);
+      await fillValid(user);
+
+      await user.click(submit());
+
+      expect(
+        await screen.findByText(/Terlalu banyak pesan dari jaringan Anda/),
+      ).toBeInTheDocument();
+    });
+
     it('gagal: menampilkan toast error, mempertahankan isian, dan mengaktifkan tombol kembali', async () => {
-      send.mockRejectedValue(new Error('HTTP 500'));
+      mockContactApi(() => HttpResponse.json({}, { status: 500 }));
       const user = userEvent.setup();
       renderWithToast(<Contact />);
       await fillValid(user);
@@ -213,12 +317,10 @@ describe('Contact (Hubungi kami)', () => {
     });
 
     it('menonaktifkan tombol dan menampilkan "Mengirim…" selama pengiriman (cegah kirim ganda)', async () => {
-      let finish: (value: 'sent') => void = () => undefined;
-      send.mockReturnValue(
-        new Promise((resolve) => {
-          finish = resolve;
-        }),
-      );
+      const { sent } = mockContactApi(async () => {
+        await delay(100);
+        return HttpResponse.json({ message: 'Pesan diterima.' }, { status: 202 });
+      });
       const user = userEvent.setup();
       renderWithToast(<Contact />);
       await fillValid(user);
@@ -228,10 +330,9 @@ describe('Contact (Hubungi kami)', () => {
       const pending = await screen.findByRole('button', { name: 'Mengirim…' });
       expect(pending).toBeDisabled();
       await user.click(pending);
-      expect(send).toHaveBeenCalledOnce();
 
-      finish('sent');
       expect(await screen.findByRole('button', { name: 'Kirim pesan' })).toBeEnabled();
+      expect(sent).toHaveLength(1);
     });
   });
 });

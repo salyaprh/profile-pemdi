@@ -1,5 +1,4 @@
 import { paths } from '../lib/router';
-import { categoryOptions } from './articlesData';
 
 export const siteName = 'PEMDI PANRB';
 
@@ -24,21 +23,8 @@ export const navigationItems: NavigationItem[] = [
   { label: 'Hubungi kami', to: paths.contact, isActive: (p) => p === paths.contact },
 ];
 
-export const footerColumns: { title: string; links: { label: string; to: string }[] }[] = [
-  {
-    title: 'Navigasi',
-    links: navigationItems.map(({ label, to }) => ({ label, to })),
-  },
-  {
-    title: 'Kategori portofolio',
-    links: categoryOptions
-      .filter((option) => option.value !== 'Semua')
-      .map((option) => ({
-        label: option.label,
-        to: `${paths.portfolio}?kategori=${encodeURIComponent(option.value)}`,
-      })),
-  },
-];
+/** Kolom tautan footer yang tetap; kolom "Kategori portofolio" diambil dari API (Footer.tsx). */
+export const footerNavigation = navigationItems.map(({ label, to }) => ({ label, to }));
 
 // TODO: angka berikut masih placeholder dari desain awal. Ganti dengan data resmi PEMDI.
 export const heroStats = [

@@ -1,8 +1,14 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
-import { isCategoryFilter } from '../data/articlesData';
-import { footerColumns } from '../data/siteContent';
+import { footerNavigation } from '../data/siteContent';
+import { testCategories } from '../test/publicApi';
+import { server } from '../test/server';
+import { renderPublic as render } from '../test/utils';
 import Footer from './Footer';
+
+// Setiap kolom dirender dua kali (kolom desktop + accordion mobile); cukup periksa yang pertama.
+const column = (name: string) => screen.getAllByRole('navigation', { name })[0];
 
 describe('Footer', () => {
   it('menampilkan logo yang menaut ke beranda', () => {
@@ -13,29 +19,42 @@ describe('Footer', () => {
     );
   });
 
-  it('memuat kolom Navigasi dan Kategori portofolio dengan semua tautannya', () => {
+  it('memuat kolom Navigasi dengan semua menu utama', () => {
     render(<Footer />);
-
-    for (const column of footerColumns) {
-      // Setiap kolom dirender dua kali (kolom desktop + accordion mobile).
-      const navs = screen.getAllByRole('navigation', { name: column.title });
-      expect(navs.length).toBeGreaterThanOrEqual(1);
-      for (const link of column.links) {
-        const found = within(navs[0]).getByRole('link', { name: link.label });
-        expect(found).toHaveAttribute('href', link.to);
-      }
+    for (const link of footerNavigation) {
+      expect(within(column('Navigasi')).getByRole('link', { name: link.label })).toHaveAttribute(
+        'href',
+        link.to,
+      );
     }
   });
 
-  it('semua tautan kategori mengarah ke filter yang valid di halaman portofolio', () => {
-    const categoryColumn = footerColumns.find((c) => c.title === 'Kategori portofolio');
-    expect(categoryColumn?.links).toHaveLength(3);
-
-    for (const link of categoryColumn?.links ?? []) {
-      const url = new URL(link.to, 'http://x');
-      expect(url.pathname).toBe('/portfolio');
-      expect(isCategoryFilter(url.searchParams.get('kategori'))).toBe(true);
+  it('kolom Kategori portofolio diambil dari API dan menaut ke filter slug', async () => {
+    render(<Footer />);
+    for (const category of testCategories) {
+      expect(
+        await within(column('Kategori portofolio')).findByRole('link', { name: category.name }),
+      ).toHaveAttribute('href', `/portfolio?kategori=${category.slug}`);
     }
+  });
+
+  it('bila kategori gagal dimuat, kolomnya tetap berisi tautan ke semua portofolio', async () => {
+    let failed = false;
+    server.use(
+      http.get('/api/categories', () => {
+        failed = true;
+        return HttpResponse.json({}, { status: 500 });
+      }),
+    );
+    render(<Footer />);
+    expect(
+      within(column('Kategori portofolio')).getByRole('link', { name: 'Semua portofolio' }),
+    ).toHaveAttribute('href', '/portfolio');
+    // Tetap begitu setelah permintaan gagal (tanpa pesan galat di footer).
+    await waitFor(() => expect(failed).toBe(true));
+    expect(
+      within(column('Kategori portofolio')).getByRole('link', { name: 'Semua portofolio' }),
+    ).toBeInTheDocument();
   });
 
   it('menampilkan hak cipta dengan tahun berjalan', () => {

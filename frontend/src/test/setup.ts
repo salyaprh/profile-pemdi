@@ -28,6 +28,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   server.resetHandlers();
+  server.events.removeAllListeners();
   clearCookies();
   window.localStorage.clear();
   document.head

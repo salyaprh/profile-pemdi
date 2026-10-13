@@ -1,6 +1,7 @@
 import { Accordion, AccordionGroup } from '@idds/react';
-import { footerColumns, siteDescription, siteName } from '../data/siteContent';
-import { Link, paths } from '../lib/router';
+import { footerNavigation, siteDescription, siteName } from '../data/siteContent';
+import { Link, paths, portfolioUrl } from '../lib/router';
+import { useCategories } from '../services/content';
 
 const linkClass =
   'text-caption font-medium text-content-secondary transition-colors hover:text-primary-600';
@@ -24,6 +25,18 @@ function ColumnLinks({ links }: { links: { label: string; to: string }[] }) {
  * Desktop memakai kolom, mobile memakai accordion. Tanpa CTA utama.
  */
 export default function Footer() {
+  const categories = useCategories();
+  // Selama kategori dimuat (atau bila gagal), kolomnya cukup berisi tautan ke semua portofolio.
+  const categoryLinks = categories.data?.map((category) => ({
+    label: category.name,
+    to: portfolioUrl(category.slug),
+  })) ?? [{ label: 'Semua portofolio', to: paths.portfolio }];
+
+  const footerColumns = [
+    { title: 'Navigasi', links: footerNavigation },
+    { title: 'Kategori portofolio', links: categoryLinks },
+  ];
+
   return (
     <footer className="border-t border-stroke-primary bg-background-primary">
       <div className="mx-auto flex max-w-[1240px] flex-col gap-8 px-5 py-10 lg:px-8">

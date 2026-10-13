@@ -1,7 +1,7 @@
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { Link, navigate, paths, useLocation } from './router';
+import { Link, navigate, paths, portfolioUrl, useLocation } from './router';
 
 describe('paths', () => {
   it('membentuk path rute', () => {
@@ -11,8 +11,15 @@ describe('paths', () => {
     expect(paths.article('3')).toBe('/portfolio/3');
   });
 
-  it('meng-encode ID artikel yang mengandung karakter khusus', () => {
+  it('meng-encode slug artikel yang mengandung karakter khusus', () => {
     expect(paths.article('a b/c')).toBe('/portfolio/a%20b%2Fc');
+  });
+
+  it('portfolioUrl: kategori (slug) dan halaman sebagai query; halaman 1 tidak ditulis', () => {
+    expect(portfolioUrl(null)).toBe('/portfolio');
+    expect(portfolioUrl('layanan-publik')).toBe('/portfolio?kategori=layanan-publik');
+    expect(portfolioUrl('layanan-publik', 2)).toBe('/portfolio?kategori=layanan-publik&halaman=2');
+    expect(portfolioUrl(null, 1)).toBe('/portfolio');
   });
 });
 
@@ -159,6 +166,17 @@ describe('Link', () => {
         Kontak
       </Link>,
     );
+    expect(clickAndReport(screen.getByRole('link'))).toBe(false);
+    expect(window.location.pathname).toBe('/');
+  });
+
+  it.each([
+    'mailto:humas@menpan.go.id',
+    'tel:+62215551234',
+    'https://www.menpan.go.id/',
+    '//cdn.example',
+  ])('tautan keluar aplikasi (%s) dibiarkan ke browser', (to) => {
+    render(<Link to={to}>Keluar</Link>);
     expect(clickAndReport(screen.getByRole('link'))).toBe(false);
     expect(window.location.pathname).toBe('/');
   });

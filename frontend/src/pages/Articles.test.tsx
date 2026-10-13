@@ -1,172 +1,174 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { articles } from '../data/articlesData';
-import { setUrl } from '../test/utils';
+import { testArticles } from '../test/publicApi';
+import { server } from '../test/server';
+import { renderPublic, setUrl } from '../test/utils';
 import Articles from './Articles';
 
+// Data tiruan: 15 artikel terbit (5 per kategori), 12 per halaman.
 const status = () => screen.getByRole('status');
-const cardLinks = () =>
+const cardSlugs = () =>
   screen
     .getAllByRole('link')
-    .filter((link) => /^\/portfolio\/[^/]+$/.test(link.getAttribute('href') ?? ''));
-const ids = () => cardLinks().map((l) => l.getAttribute('href')?.split('/').pop());
+    .map((link) => link.getAttribute('href') ?? '')
+    .filter((href) => /^\/portfolio\/[^/?]+$/.test(href))
+    .map((href) => href.split('/').pop());
+
+async function openPortfolio(url: string) {
+  setUrl(url);
+  const user = userEvent.setup();
+  renderPublic(<Articles />);
+  await screen.findByText(/^Menampilkan|^Tidak ada artikel/);
+  return user;
+}
+
+function recordRequests() {
+  const requests: string[] = [];
+  server.events.on('request:start', ({ request }) => {
+    const url = new URL(request.url);
+    if (url.pathname === '/api/articles') requests.push(url.search);
+  });
+  return requests;
+}
 
 describe('Articles (Portofolio)', () => {
-  it('menampilkan 12 artikel pertama dari 36 secara default', () => {
-    render(<Articles />);
-    expect(status()).toHaveTextContent('Menampilkan 1-12 dari 36 artikel');
-    expect(ids()).toEqual(articles.slice(0, 12).map((a) => a.id));
+  it('menampilkan 12 artikel pertama dari API secara default', async () => {
+    await openPortfolio('/portfolio');
+    expect(status()).toHaveTextContent('Menampilkan 1-12 dari 15 artikel');
+    expect(cardSlugs()).toEqual(testArticles.slice(0, 12).map((a) => a.slug));
   });
 
-  it('setiap kartu adalah tautan asli ke halaman detail', () => {
-    render(<Articles />);
-    for (const link of cardLinks()) {
-      expect(link.getAttribute('href')).toMatch(/^\/portfolio\/\d+$/);
-    }
+  it('menampilkan kerangka kartu dengan status "Memuat" selama data diambil', () => {
+    setUrl('/portfolio');
+    renderPublic(<Articles />);
+    expect(screen.getByRole('status')).toHaveTextContent('Memuat artikel');
   });
 
-  it('memiliki satu h1 dan mengatur judul dokumen', () => {
-    render(<Articles />);
+  it('memiliki satu h1 dan mengatur judul dokumen', async () => {
+    await openPortfolio('/portfolio');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(document.title).toBe('Portofolio | PEMDI PANRB');
   });
 
   describe('halaman (?halaman=)', () => {
-    it.each([
-      [2, 13, 24],
-      [3, 25, 36],
-    ])('halaman %i menampilkan artikel %i-%i', (page, from, to) => {
-      setUrl(`/portfolio?halaman=${page}`);
-      render(<Articles />);
-      expect(status()).toHaveTextContent(`Menampilkan ${from}-${to} dari 36 artikel`);
-      expect(ids()).toEqual(articles.slice(from - 1, to).map((a) => a.id));
+    it('halaman 2 menampilkan sisa artikel dan dikirim sebagai ?page=2', async () => {
+      const requests = recordRequests();
+      await openPortfolio('/portfolio?halaman=2');
+      expect(status()).toHaveTextContent('Menampilkan 13-15 dari 15 artikel');
+      expect(cardSlugs()).toEqual(testArticles.slice(12).map((a) => a.slug));
+      expect(requests).toContain('?page=2&per_page=12');
     });
 
-    it.each(['abc', '0', '-3', '', '1.5', 'NaN'])(
+    it.each(['abc', '0', '-3', '', 'NaN'])(
       'nilai tidak valid %j kembali ke halaman 1',
-      (value) => {
-        setUrl(`/portfolio?halaman=${value}`);
-        render(<Articles />);
-        expect(status()).toHaveTextContent('Menampilkan 1-12 dari 36 artikel');
+      async (value) => {
+        await openPortfolio(`/portfolio?halaman=${value}`);
+        expect(status()).toHaveTextContent('Menampilkan 1-12 dari 15 artikel');
       },
     );
 
-    it('halaman di luar jangkauan dibatasi ke halaman terakhir', () => {
-      setUrl('/portfolio?halaman=99');
-      render(<Articles />);
-      expect(status()).toHaveTextContent('Menampilkan 25-36 dari 36 artikel');
+    it('halaman di luar jangkauan: pesan dan tautan ke halaman pertama', async () => {
+      await openPortfolio('/portfolio?halaman=99');
+      expect(screen.getByText('Halaman ini kosong')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Ke halaman pertama' })).toHaveAttribute(
+        'href',
+        '/portfolio',
+      );
     });
 
     it('klik nomor halaman memperbarui URL (Back dapat kembali)', async () => {
-      const user = userEvent.setup();
-      render(<Articles />);
+      const user = await openPortfolio('/portfolio');
 
       await user.click(screen.getByRole('link', { name: 'Halaman 2' }));
 
       expect(window.location.search).toBe('?halaman=2');
-      expect(status()).toHaveTextContent('Menampilkan 13-24 dari 36 artikel');
-    });
-
-    it('halaman 1 tidak menulis ?halaman= ke URL', async () => {
-      setUrl('/portfolio?halaman=2');
-      const user = userEvent.setup();
-      render(<Articles />);
-
-      await user.click(screen.getByRole('link', { name: 'Halaman 1' }));
-
-      expect(window.location.search).toBe('');
+      expect(await screen.findByText('Menampilkan 13-15 dari 15 artikel')).toBeInTheDocument();
     });
   });
 
-  describe('kategori (?kategori=)', () => {
-    it.each(['Layanan Publik', 'Kebijakan & Regulasi', 'Panduan Pengguna'] as const)(
-      'memfilter artikel kategori %s',
-      (category) => {
-        setUrl(`/portfolio?kategori=${encodeURIComponent(category)}`);
-        render(<Articles />);
+  describe('kategori (?kategori=slug)', () => {
+    it('chip kategori berasal dari API; "Semua" aktif secara default', async () => {
+      await openPortfolio('/portfolio');
+      const group = await screen.findByRole('group', { name: 'Filter kategori' });
+      expect(
+        within(group)
+          .getAllByRole('button')
+          .map((b) => b.textContent),
+      ).toEqual(['Semua', 'Layanan Publik', 'Kebijakan & Regulasi', 'Panduan Pengguna']);
+      expect(within(group).getByRole('button', { name: 'Semua' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    });
 
-        const expected = articles.filter((a) => a.category === category);
-        const shown = Math.min(12, expected.length);
-        expect(status()).toHaveTextContent(
-          `Menampilkan 1-${shown} dari ${expected.length} artikel`,
-        );
-        expect(ids()).toEqual(expected.slice(0, shown).map((a) => a.id));
-      },
-    );
+    it('memfilter lewat slug dan menandai chip yang aktif', async () => {
+      const requests = recordRequests();
+      await openPortfolio('/portfolio?kategori=panduan-pengguna');
 
-    it('kategori tidak dikenal diperlakukan sebagai "Semua"', () => {
-      setUrl('/portfolio?kategori=Tidak+Ada');
-      render(<Articles />);
-      expect(status()).toHaveTextContent('Menampilkan 1-12 dari 36 artikel');
+      expect(status()).toHaveTextContent('Menampilkan 1-5 dari 5 artikel');
+      expect(requests).toContain('?kategori=panduan-pengguna&per_page=12');
+      expect(await screen.findByRole('button', { name: 'Panduan Pengguna' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
     });
 
     it('klik chip kategori memperbarui URL dan mereset halaman ke 1', async () => {
-      setUrl('/portfolio?halaman=3');
-      const user = userEvent.setup();
-      render(<Articles />);
+      const user = await openPortfolio('/portfolio?halaman=2');
 
-      await user.click(screen.getByRole('button', { name: 'Panduan Pengguna' }));
+      await user.click(await screen.findByRole('button', { name: 'Kebijakan & Regulasi' }));
 
-      expect(window.location.search).toBe('?kategori=Panduan+Pengguna');
-      const expected = articles.filter((a) => a.category === 'Panduan Pengguna');
-      expect(status()).toHaveTextContent(`dari ${expected.length} artikel`);
-      expect(status()).toHaveTextContent('Menampilkan 1-');
+      expect(window.location.search).toBe('?kategori=kebijakan-regulasi');
+      expect(await screen.findByText('Menampilkan 1-5 dari 5 artikel')).toBeInTheDocument();
     });
 
     it('memilih "Semua" menghapus ?kategori= dari URL', async () => {
-      setUrl('/portfolio?kategori=Layanan+Publik');
-      const user = userEvent.setup();
-      render(<Articles />);
+      const user = await openPortfolio('/portfolio?kategori=layanan-publik');
 
-      await user.click(screen.getByRole('button', { name: 'Semua' }));
+      await user.click(await screen.findByRole('button', { name: 'Semua' }));
 
       expect(window.location.search).toBe('');
-      expect(status()).toHaveTextContent('dari 36 artikel');
+      expect(await screen.findByText('Menampilkan 1-12 dari 15 artikel')).toBeInTheDocument();
     });
 
-    it('filter dan halaman dapat digabung', () => {
-      setUrl('/portfolio?kategori=Layanan+Publik&halaman=2');
-      render(<Articles />);
-
-      const expected = articles.filter((a) => a.category === 'Layanan Publik');
-      expect(expected.length).toBeGreaterThan(12);
-      expect(ids()).toEqual(expected.slice(12, 24).map((a) => a.id));
+    it('kategori tanpa artikel (atau tidak dikenal): pesan kosong dan tautan semua artikel', async () => {
+      await openPortfolio('/portfolio?kategori=tidak-ada');
+      expect(screen.getByText('Belum ada artikel di kategori ini')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Tampilkan semua artikel' })).toHaveAttribute(
+        'href',
+        '/portfolio',
+      );
     });
   });
 
   describe('paginasi', () => {
-    it('ditampilkan sebagai navigasi berisi tautan bila lebih dari satu halaman', () => {
-      render(<Articles />);
+    it('ditampilkan sebagai navigasi berisi tautan yang mempertahankan filter', async () => {
+      await openPortfolio('/portfolio');
       const nav = screen.getByRole('navigation', { name: 'Paginasi' });
 
-      expect(within(nav).getByText('Halaman 1 dari 3')).toBeInTheDocument();
-      for (const page of [1, 2, 3]) {
-        expect(within(nav).getByRole('link', { name: `Halaman ${page}` })).toHaveAttribute(
-          'href',
-          page === 1 ? '/portfolio' : `/portfolio?halaman=${page}`,
-        );
-      }
+      expect(within(nav).getByText('Halaman 1 dari 2')).toBeInTheDocument();
+      expect(within(nav).getByRole('link', { name: 'Halaman 2' })).toHaveAttribute(
+        'href',
+        '/portfolio?halaman=2',
+      );
       expect(within(nav).getByRole('link', { name: 'Halaman 1' })).toHaveAttribute(
         'aria-current',
         'page',
       );
     });
+  });
 
-    it('tautan halaman mempertahankan filter kategori', () => {
-      setUrl('/portfolio?kategori=Layanan+Publik');
-      render(<Articles />);
-      const nav = screen.getByRole('navigation', { name: 'Paginasi' });
-      expect(within(nav).getByRole('link', { name: 'Halaman 2' })).toHaveAttribute(
-        'href',
-        '/portfolio?kategori=Layanan+Publik&halaman=2',
-      );
-    });
+  it('gagal memuat: pesan galat dan tombol coba lagi', async () => {
+    server.use(http.get('/api/articles', () => HttpResponse.json({}, { status: 503 })));
+    setUrl('/portfolio');
+    renderPublic(<Articles />);
 
-    it('tidak ada kontrol bernama kosong: tombol ikon tanpa nama dan <select> sudah tidak ada', () => {
-      const { container } = render(<Articles />);
-      expect(container.querySelector('select')).toBeNull();
-      expect(screen.queryByText('Baris per halaman')).not.toBeInTheDocument();
-    });
+    expect(await screen.findByText('Artikel gagal dimuat')).toBeInTheDocument();
+    expect(
+      screen.getByText('Terjadi kesalahan di server. Coba lagi beberapa saat lagi.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Coba lagi' })).toBeInTheDocument();
   });
 });

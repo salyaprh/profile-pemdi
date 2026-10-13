@@ -1,0 +1,49 @@
+{
+  "_keterangan": "Kasus validasi formulir kontak yang dipakai bersama oleh src/lib/validators.test.ts dan backend/tests/Feature/ContactValidationParityTest.php. Nilai {\"ulang\": x, \"kali\": n} berarti string x diulang n kali.",
+  "name": [
+    { "value": "", "valid": false },
+    { "value": "   ", "valid": false },
+    { "value": "Bu", "valid": false },
+    { "value": "Budi", "valid": true },
+    { "value": "  Budi Santoso  ", "valid": true },
+    { "value": { "ulang": "a", "kali": 100 }, "valid": true },
+    { "value": { "ulang": "a", "kali": 101 }, "valid": false }
+  ],
+  "email": [
+    { "value": "budi@instansi.go.id", "valid": true },
+    { "value": "  budi@instansi.go.id  ", "valid": true },
+    { "value": "a@b.co", "valid": true },
+    { "value": "", "valid": false },
+    { "value": "budi", "valid": false },
+    { "value": "budi@", "valid": false },
+    { "value": "budi@instansi", "valid": false },
+    { "value": "budi @instansi.go.id", "valid": false },
+    { "value": "@instansi.go.id", "valid": false }
+  ],
+  "phone": [
+    { "value": "", "valid": true },
+    { "value": "+62", "valid": true },
+    { "value": "+621", "valid": true },
+    { "value": "+6281234567890", "valid": true },
+    { "value": "0812-3456-7890", "valid": true },
+    { "value": "(021) 555-1234", "valid": true },
+    { "value": "08123", "valid": false },
+    { "value": "+62 812 abc 4567", "valid": false },
+    { "value": "0812345678901234", "valid": false }
+  ],
+  "subject": [
+    { "value": "", "valid": false },
+    { "value": "   ", "valid": false },
+    { "value": "Kolaborasi program", "valid": true },
+    { "value": { "ulang": "s", "kali": 150 }, "valid": true },
+    { "value": { "ulang": "s", "kali": 151 }, "valid": false }
+  ],
+  "message": [
+    { "value": "", "valid": false },
+    { "value": "pendek", "valid": false },
+    { "value": "         x         ", "valid": false },
+    { "value": "Halo, ini pesan uji.", "valid": true },
+    { "value": { "ulang": "m", "kali": 1000 }, "valid": true },
+    { "value": { "ulang": "m", "kali": 1001 }, "valid": false }
+  ]
+}

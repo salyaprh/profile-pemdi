@@ -1,7 +1,15 @@
 import { Alert, Button, Skeleton } from '@idds/react';
-import { IconCircleCheck, IconClockHour4, IconPencil, type Icon } from '@tabler/icons-react';
+import {
+  IconCircleCheck,
+  IconClockHour4,
+  IconMail,
+  IconPencil,
+  type Icon,
+} from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
+import ButtonLink from '../../components/ButtonLink';
 import { formatDateTime } from '../../lib/format';
+import { paths } from '../../lib/router';
 import { usePageMeta } from '../../lib/seo';
 import { apiRequest } from '../../services/api';
 import { useAuthenticatedUser } from '../auth';
@@ -16,6 +24,8 @@ interface ActivityItem {
 
 export interface DashboardData {
   metrics: { published: number; in_review: number; draft: number };
+  /** Khusus Admin: jumlah pesan kontak yang belum dibaca. */
+  unread_messages?: number;
   recent_activity: ActivityItem[];
 }
 
@@ -92,6 +102,37 @@ export default function DashboardPage() {
               ))}
             </dl>
           </section>
+
+          {isAdmin && dashboard.data?.unread_messages !== undefined && (
+            <section
+              aria-labelledby="judul-pesan"
+              className="flex flex-col gap-3 rounded-xl border border-stroke-primary bg-background-primary p-5 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <IconMail size={22} aria-hidden="true" className="text-primary-600" />
+                <div>
+                  <h2 id="judul-pesan" className="text-body-sm font-semibold">
+                    Pesan masuk
+                  </h2>
+                  <p className="text-caption text-content-secondary">
+                    {dashboard.data.unread_messages > 0
+                      ? `${dashboard.data.unread_messages} pesan belum dibaca`
+                      : 'Tidak ada pesan yang belum dibaca'}
+                  </p>
+                </div>
+              </div>
+              <ButtonLink
+                to={
+                  dashboard.data.unread_messages > 0
+                    ? `${paths.adminMessages}?status=belum-dibaca`
+                    : paths.adminMessages
+                }
+                hierarchy="secondary"
+              >
+                Buka pesan masuk
+              </ButtonLink>
+            </section>
+          )}
 
           {isAdmin && (
             <section

@@ -1,6 +1,6 @@
 import {
+  useEffect,
   useId,
-  useMemo,
   useRef,
   useState,
   type FocusEvent,
@@ -9,8 +9,12 @@ import {
 } from 'react';
 import { TextField } from '@idds/react';
 import { IconSearch } from '@tabler/icons-react';
-import { searchArticles } from '../data/articlesData';
 import { Link, navigate, paths } from '../lib/router';
+import { useArticles } from '../services/content';
+
+const RESULT_LIMIT = 6;
+/** Jeda setelah berhenti mengetik sebelum meminta hasil ke server. */
+export const SEARCH_DEBOUNCE_MS = 250;
 
 interface SearchBarProps {
   className?: string;
@@ -19,7 +23,8 @@ interface SearchBarProps {
 }
 
 /**
- * Pencarian artikel: TextField IDDS + panel hasil berisi tautan (pola Searchbar IDDS).
+ * Pencarian artikel: TextField IDDS + panel hasil berisi tautan (pola Searchbar IDDS). Hasil diambil
+ * dari API (judul dan ringkasan artikel terbit) setelah pengguna berhenti mengetik sejenak.
  *
  * Panel dibuat sendiri, bukan BasicDropdown IDDS: pembungkus <div role="button"> milik
  * BasicDropdown berisi kontrol interaktif (kolom input dan tombol hapus), yang melanggar
@@ -33,7 +38,16 @@ export default function SearchBar({ className = '', onSelect }: SearchBarProps) 
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
 
-  const results = useMemo(() => searchArticles(query), [query]);
+  const [term, setTerm] = useState('');
+  useEffect(() => {
+    const timer = window.setTimeout(() => setTerm(query.trim()), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  const search = useArticles({ cari: term, perPage: RESULT_LIMIT }, { enabled: term.length > 0 });
+  // Hasil hanya ditampilkan bila sesuai teks yang sedang tertulis (bukan sisa pencarian lama).
+  const settled = term === query.trim() && !search.isPlaceholderData && search.isSuccess;
+  const results = settled ? search.data.data : [];
   const hasQuery = query.trim().length > 0;
   const panelOpen = open && hasQuery;
 
@@ -56,7 +70,7 @@ export default function SearchBar({ className = '', onSelect }: SearchBarProps) 
       results.length > 0
     ) {
       event.preventDefault();
-      navigate(paths.article(results[0].id));
+      navigate(paths.article(results[0].slug));
       close();
     }
   };
@@ -105,14 +119,22 @@ export default function SearchBar({ className = '', onSelect }: SearchBarProps) 
           className="absolute right-0 top-full z-50 mt-1 flex max-h-72 w-[320px] max-w-[calc(100vw-2.5rem)] flex-col gap-1 overflow-y-auto rounded-lg border border-stroke-primary bg-background-primary p-2 shadow-lg"
         >
           <p className="px-2 pt-1 text-caption-sm text-content-secondary" role="status">
-            {results.length > 0 ? `${results.length} hasil pencarian` : 'Hasil pencarian'}
+            {!settled && !search.isError
+              ? 'Mencari…'
+              : results.length > 0
+                ? `${results.length} hasil pencarian`
+                : 'Hasil pencarian'}
           </p>
-          {results.length > 0 ? (
+          {search.isError ? (
+            <p className="px-2 py-3 text-caption text-content-secondary">
+              Pencarian gagal. Periksa koneksi Anda lalu coba lagi.
+            </p>
+          ) : results.length > 0 ? (
             <ul className="flex flex-col gap-1">
               {results.map((article) => (
-                <li key={article.id}>
+                <li key={article.slug}>
                   <Link
-                    to={paths.article(article.id)}
+                    to={paths.article(article.slug)}
                     onNavigate={close}
                     className="block rounded-lg px-2 py-2 hover:bg-background-tertiary"
                   >
@@ -120,16 +142,18 @@ export default function SearchBar({ className = '', onSelect }: SearchBarProps) 
                       {article.title}
                     </span>
                     <span className="text-caption-sm text-content-secondary">
-                      {article.category}
+                      {article.category.name}
                     </span>
                   </Link>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="px-2 py-3 text-caption text-content-secondary">
-              Tidak ada hasil untuk &ldquo;{query.trim()}&rdquo;. Coba kata kunci lain.
-            </p>
+            settled && (
+              <p className="px-2 py-3 text-caption text-content-secondary">
+                Tidak ada hasil untuk &ldquo;{query.trim()}&rdquo;. Coba kata kunci lain.
+              </p>
+            )
           )}
         </div>
       )}

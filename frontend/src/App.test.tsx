@@ -2,28 +2,28 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import App from './App';
-import { articles } from './data/articlesData';
-import { renderWithToast, setUrl } from './test/utils';
+import { testArticles } from './test/publicApi';
+import { renderWithToast, setUrl, testQueryClient } from './test/utils';
 
 const h1 = () => screen.getByRole('heading', { level: 1 });
 
 function renderAt(url: string) {
   setUrl(url);
-  return renderWithToast(<App />);
+  return renderWithToast(<App queryClient={testQueryClient()} />);
 }
 
 describe('App: peta rute', () => {
   it.each([
     ['/', 'Transformasi digital pemerintah untuk Indonesia yang lebih maju.'],
     ['/portfolio', 'Portofolio Pemerintah Digital'],
-    ['/portfolio?kategori=Layanan+Publik&halaman=2', 'Portofolio Pemerintah Digital'],
+    ['/portfolio?kategori=layanan-publik&halaman=2', 'Portofolio Pemerintah Digital'],
     ['/portfolio/', 'Portofolio Pemerintah Digital'],
     ['/contact', 'Hubungi kami'],
     ['/contact/', 'Hubungi kami'],
-    [`/portfolio/${articles[2].id}`, articles[2].title],
-  ])('%s -> %s', (url, heading) => {
+    [`/portfolio/${testArticles[2].slug}`, testArticles[2].title],
+  ])('%s -> %s', async (url, heading) => {
     renderAt(url);
-    expect(h1()).toHaveTextContent(heading);
+    expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
   });
 
   it.each([
@@ -37,14 +37,19 @@ describe('App: peta rute', () => {
     expect(h1()).toHaveTextContent('404: Halaman tidak ditemukan');
   });
 
-  it('ID artikel yang tidak ada -> 404 khusus artikel', () => {
+  it('slug artikel yang tidak ada -> 404 khusus artikel', async () => {
     renderAt('/portfolio/999');
-    expect(h1()).toHaveTextContent('Artikel tidak ditemukan');
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Artikel tidak ditemukan' }),
+    ).toBeInTheDocument();
   });
 
-  it('ID artikel ber-encode didekode sebelum dicari', () => {
-    renderAt('/portfolio/%31'); // "%31" = "1"
-    expect(h1()).toHaveTextContent(articles[0].title);
+  it('slug ber-encode didekode sebelum diminta ke API', async () => {
+    const [first, ...rest] = testArticles[0].slug.split('-');
+    renderAt(`/portfolio/${encodeURIComponent(first)}%2D${rest.join('-')}`); // "%2D" = "-"
+    expect(
+      await screen.findByRole('heading', { level: 1, name: testArticles[0].title }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -88,11 +93,11 @@ describe('App: navigasi', () => {
     const user = userEvent.setup();
     renderAt('/');
 
-    const first = articles[0];
+    const first = testArticles[0];
     await user.click(
-      screen.getAllByRole('link').find((l) => l.getAttribute('href') === `/portfolio/${first.id}`)!,
+      await screen.findByRole('link', { name: (name) => name.startsWith(first.title) }),
     );
-    expect(h1()).toHaveTextContent(first.title);
+    expect(await screen.findByRole('heading', { level: 1, name: first.title })).toBeInTheDocument();
 
     await user.click(
       within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByText('Portofolio'),
@@ -102,7 +107,7 @@ describe('App: navigasi', () => {
 
   it('tombol Back browser mengembalikan halaman sebelumnya (state ada di URL)', async () => {
     const user = userEvent.setup();
-    renderAt('/portfolio?kategori=Layanan+Publik');
+    renderAt('/portfolio?kategori=layanan-publik');
     const nav = screen.getByRole('navigation', { name: 'Navigasi utama' });
 
     await user.click(within(nav).getByRole('link', { name: 'Hubungi kami' }));
@@ -110,7 +115,7 @@ describe('App: navigasi', () => {
 
     window.history.back();
     await screen.findByRole('heading', { level: 1, name: 'Portofolio Pemerintah Digital' });
-    expect(window.location.search).toBe('?kategori=Layanan+Publik');
+    expect(window.location.search).toBe('?kategori=layanan-publik');
   });
 
   it('judul dokumen berubah mengikuti halaman', async () => {

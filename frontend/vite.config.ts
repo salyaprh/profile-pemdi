@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url';
 import { loadEnv } from 'vite';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
@@ -11,7 +10,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   const backendUrl = process.env.BACKEND_URL ?? 'http://127.0.0.1:8000';
   const backendProxy = Object.fromEntries(
-    ['/api', '/storage'].map((prefix) => [prefix, { target: backendUrl }]),
+    ['/api', '/storage', '/sitemap.xml'].map((prefix) => [prefix, { target: backendUrl }]),
   );
 
   return {
@@ -19,13 +18,10 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       selfHostFonts(),
-      seo({
-        siteUrl: env.VITE_SITE_URL,
-        articlesFile: fileURLToPath(new URL('./src/data/articlesData.ts', import.meta.url)),
-      }),
+      seo({ siteUrl: env.VITE_SITE_URL }),
     ],
-    // Backend Laravel (php artisan serve) di-proxy agar satu origin seperti di produksi: cookie sesi
-    // dan CSRF berlaku tanpa CORS. Atur BACKEND_URL bila server API tidak di port 8000.
+    // Backend Laravel (composer dev) di-proxy agar satu origin seperti di produksi: cookie sesi dan
+    // CSRF berlaku tanpa CORS. Atur BACKEND_URL bila server API tidak di port 8000.
     server: { proxy: backendProxy },
     preview: { proxy: backendProxy },
     test: {
