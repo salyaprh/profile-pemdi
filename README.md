@@ -12,7 +12,7 @@ Situs profil PEMDI / PANRB (Pemerintah Digital) yang menampilkan karya dan inisi
 
 ## Menjalankan
 
-Butuh Node.js 20.19+ atau 22.12+ (syarat Vite 7).
+Butuh Node.js 22.12+ (syarat Vite 7 dan jest-dom 7; Node 20 sudah EOL sejak April 2026).
 
 ```bash
 npm install
