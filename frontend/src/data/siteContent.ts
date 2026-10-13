@@ -9,7 +9,7 @@ export const siteName = 'PEMDI PANRB';
 export const siteDescription =
   'PEMDI merangkum karya dan inisiatif TDP dalam membangun layanan pemerintah yang terintegrasi, berdampak, dan berpusat pada kebutuhan masyarakat.';
 
-export interface NavigationItem {
+interface NavigationItem {
   label: string;
   to: string;
   /** Menentukan menu aktif berdasarkan pathname saat ini. */

@@ -61,12 +61,13 @@ function SiteInfo() {
       </a>
     ),
     contact.email && (
-      <a key="email" href={`mailto:${contact.email}`} className={linkClass}>
+      <a key="email" href={`mailto:${encodeURIComponent(contact.email)}`} className={linkClass}>
         {contact.email}
       </a>
     ),
   ].filter(Boolean);
-  const socials = socialLinks.filter(({ key }) => social[key]);
+  // Hanya https (sudah dijamin server); diperiksa lagi di sini agar alamat tak terduga tidak pernah menjadi href.
+  const socials = socialLinks.filter(({ key }) => social[key]?.startsWith('https://'));
 
   return (
     <>

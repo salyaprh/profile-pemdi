@@ -5,6 +5,7 @@ import { ApiError } from '../../services/api';
 import { useCategories, useDeleteCategory, useSaveCategory } from '../articles/api';
 import type { Category } from '../articles/types';
 import ConfirmDialog from '../components/ConfirmDialog';
+import LoadError from '../components/LoadError';
 
 function validateName(name: string): string | null {
   if (!name.trim()) return 'Nama kategori wajib diisi';
@@ -123,16 +124,11 @@ export default function CategoriesPage() {
       )}
 
       {categories.isError ? (
-        <div className="space-y-3">
-          <Alert
-            variant="critical"
-            title="Kategori gagal dimuat"
-            message={categories.error.message}
-          />
-          <Button hierarchy="secondary" onClick={() => void categories.refetch()}>
-            Coba lagi
-          </Button>
-        </div>
+        <LoadError
+          title="Kategori gagal dimuat"
+          message={categories.error.message}
+          onRetry={() => void categories.refetch()}
+        />
       ) : (
         <div className="rounded-xl border border-stroke-primary bg-background-primary">
           <p role="status" className="sr-only">

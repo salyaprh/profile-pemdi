@@ -7,8 +7,6 @@ export interface ActivityEntry {
   id: number;
   /** Kode aksi, mis. artikel_dibuat, login_gagal. */
   action: string;
-  /** Kelompok untuk filter: lihat ACTIVITY_GROUPS. */
-  group: ActivityGroup;
   description: string;
   /** Null untuk aksi tanpa pelaku (mis. percobaan masuk dengan email yang tidak dikenal). */
   user_name: string | null;
@@ -16,6 +14,7 @@ export interface ActivityEntry {
   created_at: string;
 }
 
+/** Nilai `kelompok` yang dikenal backend (App\Enums\ActivityGroup); "semua" = tanpa filter. */
 export const ACTIVITY_GROUPS = [
   { value: 'semua', label: 'Semua' },
   { value: 'login', label: 'Masuk dan keluar' },
@@ -26,7 +25,6 @@ export const ACTIVITY_GROUPS = [
   { value: 'pengaturan', label: 'Pengaturan' },
 ] as const;
 
-export type ActivityGroup = Exclude<(typeof ACTIVITY_GROUPS)[number]['value'], 'semua'>;
 export type ActivityFilter = (typeof ACTIVITY_GROUPS)[number]['value'];
 
 export function useActivity(filter: ActivityFilter, page: number) {

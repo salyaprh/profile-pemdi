@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { server } from '../../test/server';
 import { renderWithToast, setUrl } from '../../test/utils';
 import AdminApp from '../AdminApp';
-import { validateNewPassword } from '../password';
+import { validateNewPassword } from '../account/password';
 import { createAdminQueryClient } from '../queryClient';
 import { adminUser, managedUser, mockSession } from '../test-helpers';
 

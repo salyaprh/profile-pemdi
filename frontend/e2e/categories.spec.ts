@@ -1,5 +1,5 @@
 import { audit } from './a11y.helper';
-import { apiPost, loginAs, uniqueSuffix } from './admin.helper';
+import { apiSend, loginAs, uniqueSuffix } from './admin.helper';
 import { expect, test } from './fixtures';
 
 test('Admin menambah, mengganti nama, dan menghapus kategori', async ({ page, problems }) => {
@@ -55,6 +55,8 @@ test('Penulis tidak dapat membuka atau mengubah kategori', async ({ page }) => {
   expect(await audit(page)).toEqual([]);
 
   // Backend menolak sendiri, bukan hanya UI yang menyembunyikan.
-  const response = await apiPost(page, '/api/admin/categories', { name: 'Kategori Penulis' });
+  const response = await apiSend(page, 'POST', '/api/admin/categories', {
+    name: 'Kategori Penulis',
+  });
   expect(response.status()).toBe(403);
 });

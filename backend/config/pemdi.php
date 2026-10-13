@@ -15,6 +15,12 @@ return [
     'media_directory' => env('MEDIA_DIRECTORY', 'media'),
 
     /*
+    | Masa simpan log aktivitas (bulan). Memuat alamat IP, jadi tidak disimpan selamanya; dihapus
+    | `model:prune` yang dijadwalkan harian (routes/console.php).
+    */
+    'activity_retention_months' => (int) env('ACTIVITY_RETENTION_MONTHS', 24),
+
+    /*
     | Batas permintaan API situs publik per IP per menit (artikel, kategori, sitemap).
     */
     'public_rate_limit' => (int) env('PUBLIC_API_RATE_LIMIT', 120),

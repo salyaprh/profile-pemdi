@@ -9,7 +9,7 @@ import { ACTIVITY_GROUPS, useActivity, type ActivityFilter } from '../activity/a
 import LoadError from '../components/LoadError';
 import { DataTable, HeaderCell } from '../components/Table';
 
-export function activityUrl(filter: ActivityFilter, page = 1): string {
+function activityUrl(filter: ActivityFilter, page = 1): string {
   const params = new URLSearchParams();
   if (filter !== 'semua') params.set('kelompok', filter);
   if (page > 1) params.set('halaman', String(page));

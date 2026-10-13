@@ -12,7 +12,7 @@ import { useAuthenticatedUser, type AdminRole } from '../auth';
 import ConfirmDialog from '../components/ConfirmDialog';
 import LoadError from '../components/LoadError';
 import SelectField from '../components/SelectField';
-import { PASSWORD_HINT, generatePassword, validateNewPassword } from '../password';
+import { PASSWORD_HINT, generatePassword, validateNewPassword } from '../account/password';
 import {
   useCreateUser,
   useResetPassword,

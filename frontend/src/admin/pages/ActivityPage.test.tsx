@@ -13,7 +13,6 @@ const entries: ActivityEntry[] = [
   {
     id: 3,
     action: 'login_gagal',
-    group: 'login',
     description: 'Percobaan masuk gagal untuk x@pemdi.test.',
     user_name: null,
     ip_address: '203.0.113.7',
@@ -22,7 +21,6 @@ const entries: ActivityEntry[] = [
   {
     id: 2,
     action: 'artikel_dibuat',
-    group: 'artikel',
     description: 'Membuat artikel "Integrasi Layanan".',
     user_name: 'Siti Penulis',
     ip_address: '203.0.113.8',

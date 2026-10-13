@@ -1,6 +1,6 @@
 import { expect, test as base } from '@playwright/test';
 
-export interface Problems {
+interface Problems {
   consoleErrors: string[];
   pageErrors: string[];
   cspViolations: string[];

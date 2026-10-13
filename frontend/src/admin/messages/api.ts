@@ -6,7 +6,7 @@ import type { Paginated } from '../articles/types';
  * Pesan dari formulir "Hubungi kami" (khusus Admin). Isinya disimpan terenkripsi di database
  * dan dihapus otomatis 12 bulan setelah diterima (backend: App\Models\ContactMessage).
  */
-export interface ContactMessageSummary {
+interface ContactMessageSummary {
   id: number;
   name: string;
   email: string;
@@ -24,7 +24,7 @@ export interface ContactMessageDetail extends ContactMessageSummary {
 
 export type MessageFilter = 'semua' | 'belum-dibaca';
 
-export const messageKeys = {
+const messageKeys = {
   list: (filter: MessageFilter, page: number) =>
     ['admin', 'messages', 'list', filter, page] as const,
   detail: (id: number) => ['admin', 'messages', 'detail', id] as const,

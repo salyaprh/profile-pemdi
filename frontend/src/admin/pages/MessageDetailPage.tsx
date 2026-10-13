@@ -9,11 +9,14 @@ import { usePageMeta } from '../../lib/seo';
 import { ApiError } from '../../services/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useDeleteMessage, useMarkMessage, useMessage } from '../messages/api';
+import LoadError from '../components/LoadError';
 
-/** Tautan balasan lewat aplikasi email Admin (CMS tidak mengirim email sendiri). */
-export function replyHref(email: string, subject: string): string {
-  return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(`Re: ${subject}`)}`;
-}
+/**
+ * Alamat email pengirim berasal dari pengunjung dan lolos validasi yang longgar, jadi selalu
+ * di-encode: tanpa itu "x@y.zz?bcc=..." akan menambah header ke surel yang dibuka Admin.
+ */
+const mailto = (email: string, subject?: string) =>
+  `mailto:${encodeURIComponent(email)}${subject ? `?subject=${encodeURIComponent(subject)}` : ''}`;
 
 /** Detail satu pesan; ditandai sudah dibaca saat dibuka. */
 export default function MessageDetailPage({ messageId }: { messageId: number }) {
@@ -53,12 +56,11 @@ export default function MessageDetailPage({ messageId }: { messageId: number }) 
         action={<ButtonLink to={paths.adminMessages}>Kembali ke pesan masuk</ButtonLink>}
       />
     ) : (
-      <div className="space-y-3">
-        <Alert variant="critical" title="Pesan gagal dimuat" message={message.error.message} />
-        <Button hierarchy="secondary" onClick={() => void message.refetch()}>
-          Coba lagi
-        </Button>
-      </div>
+      <LoadError
+        title="Pesan gagal dimuat"
+        message={message.error.message}
+        onRetry={() => void message.refetch()}
+      />
     );
   }
 
@@ -113,7 +115,7 @@ export default function MessageDetailPage({ messageId }: { messageId: number }) 
             <dt className="text-content-secondary">Email</dt>
             <dd>
               <a
-                href={`mailto:${item.email}`}
+                href={mailto(item.email)}
                 className="text-primary-600 underline underline-offset-2"
               >
                 {item.email}
@@ -147,7 +149,7 @@ export default function MessageDetailPage({ messageId }: { messageId: number }) 
         </div>
 
         <aside aria-label="Tindakan pesan" className="flex flex-col gap-2 lg:self-start">
-          <ButtonLink to={replyHref(item.email, item.subject)}>
+          <ButtonLink to={mailto(item.email, `Re: ${item.subject}`)}>
             <IconMailForward size={18} aria-hidden="true" />
             Balas lewat email
           </ButtonLink>

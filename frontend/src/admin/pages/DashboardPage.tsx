@@ -1,4 +1,4 @@
-import { Alert, Button, Skeleton } from '@idds/react';
+import { Skeleton } from '@idds/react';
 import {
   IconCircleCheck,
   IconClockHour4,
@@ -13,6 +13,7 @@ import { Link, paths } from '../../lib/router';
 import { usePageMeta } from '../../lib/seo';
 import { apiRequest } from '../../services/api';
 import { useAuthenticatedUser } from '../auth';
+import LoadError from '../components/LoadError';
 
 interface ActivityItem {
   id: number;
@@ -62,16 +63,11 @@ export default function DashboardPage() {
       </div>
 
       {dashboard.isError ? (
-        <div className="space-y-3">
-          <Alert
-            variant="critical"
-            title="Ringkasan gagal dimuat"
-            message={dashboard.error.message}
-          />
-          <Button hierarchy="secondary" onClick={() => void dashboard.refetch()}>
-            Coba lagi
-          </Button>
-        </div>
+        <LoadError
+          title="Ringkasan gagal dimuat"
+          message={dashboard.error.message}
+          onRetry={() => void dashboard.refetch()}
+        />
       ) : (
         <>
           <section aria-labelledby="judul-ringkasan">

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\ActivityAction;
 use App\Models\ActivityLog;
 use App\Models\Article;
 use App\Models\User;
@@ -38,7 +39,7 @@ class DashboardTest extends TestCase
         Article::factory()->inReview()->count(2)->create();
         Article::factory()->create();
         Article::factory()->published()->create()->delete(); // di sampah: tidak dihitung
-        ActivityLog::record('login', 'Masuk ke CMS.', user: $admin);
+        ActivityLog::record(ActivityAction::Login, 'Masuk ke CMS.', user: $admin);
 
         $response = $this->actingAs($admin)->getJson('/api/admin/dashboard')->assertOk();
 
@@ -54,7 +55,7 @@ class DashboardTest extends TestCase
         Article::factory()->for($penulis, 'author')->inReview()->create();
         Article::factory()->for($penulis, 'author')->count(2)->create();
         Article::factory()->published()->count(5)->create(); // milik orang lain
-        ActivityLog::record('login', 'Masuk ke CMS.', user: $penulis);
+        ActivityLog::record(ActivityAction::Login, 'Masuk ke CMS.', user: $penulis);
 
         $this->actingAs($penulis)->getJson('/api/admin/dashboard')
             ->assertOk()
@@ -68,7 +69,7 @@ class DashboardTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
         foreach (range(1, 10) as $i) {
-            ActivityLog::record('aksi', "Aksi {$i}", user: $admin);
+            ActivityLog::record(ActivityAction::ArtikelDiperbarui, "Aksi {$i}", user: $admin);
         }
 
         $activity = $this->actingAs($admin)->getJson('/api/admin/dashboard')->json('recent_activity');

@@ -19,8 +19,10 @@ import { useAuthenticatedUser } from '../auth';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CoverImageField from '../components/CoverImageField';
 import StatusBadge from '../components/StatusBadge';
+import SelectField from '../components/SelectField';
 import RichTextEditor from '../editor/RichTextEditor';
 import { useUnsavedChangesGuard } from '../useUnsavedChangesGuard';
+import LoadError from '../components/LoadError';
 
 type Field = 'title' | 'slug' | 'excerpt' | 'body_html' | 'category_id' | 'cover_url' | 'source';
 type FieldErrors = Partial<Record<Field, string>>;
@@ -107,12 +109,11 @@ export default function ArticleEditorPage({ articleId }: { articleId: number | n
         action={<ButtonLink to={paths.adminArticles}>Kembali ke daftar artikel</ButtonLink>}
       />
     ) : (
-      <div className="space-y-3">
-        <Alert variant="critical" title="Artikel gagal dimuat" message={article.error.message} />
-        <Button hierarchy="secondary" onClick={() => void article.refetch()}>
-          Coba lagi
-        </Button>
-      </div>
+      <LoadError
+        title="Artikel gagal dimuat"
+        message={article.error.message}
+        onRetry={() => void article.refetch()}
+      />
     );
   }
 
@@ -337,40 +338,20 @@ function ArticleForm({ article }: { article: AdminArticle | null }) {
             autoComplete="off"
             disabled={!editable}
           />
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor={fieldIds.category_id}
-              className="text-caption font-medium text-content-primary"
-            >
-              Kategori <span className="text-negative-600">*</span>
-            </label>
-            <select
-              id={fieldIds.category_id}
-              value={values.category_id ?? ''}
-              onChange={(event) =>
-                update('category_id', event.target.value ? Number(event.target.value) : null)
-              }
-              aria-invalid={errors.category_id ? true : undefined}
-              aria-describedby={errors.category_id ? 'artikel-kategori-error' : undefined}
-              disabled={!editable || categories.isPending}
-              required
-              className="admin-select"
-            >
-              <option value="">
-                {categories.isPending ? 'Memuat kategori…' : 'Pilih kategori'}
-              </option>
-              {categories.data?.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            {errors.category_id && (
-              <p id="artikel-kategori-error" className="text-caption-sm text-negative-600">
-                {errors.category_id}
-              </p>
-            )}
-          </div>
+          <SelectField
+            id={fieldIds.category_id}
+            label="Kategori"
+            required
+            value={values.category_id === null ? '' : String(values.category_id)}
+            onValueChange={(value) => update('category_id', value ? Number(value) : null)}
+            options={(categories.data ?? []).map(({ id, name }) => ({
+              value: String(id),
+              label: name,
+            }))}
+            placeholder={categories.isPending ? 'Memuat kategori…' : 'Pilih kategori'}
+            error={errors.category_id}
+            disabled={!editable || categories.isPending}
+          />
           <TextArea
             id={fieldIds.excerpt}
             name="excerpt"

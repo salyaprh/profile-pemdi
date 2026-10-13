@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ActivityAction;
+use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\ActivityLog;
@@ -49,14 +51,31 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         $user->forceFill(['last_login_at' => now()])->save();
-        ActivityLog::record('login', 'Masuk ke CMS.', user: $user);
+        ActivityLog::record(ActivityAction::Login, 'Masuk ke CMS.', user: $user);
+
+        return response()->json(['user' => new UserResource($user)]);
+    }
+
+    /**
+     * Ganti kata sandi akun sendiri. Penanda kata sandi sementara dicabut. Sesi di perangkat lain
+     * berakhir sendiri karena middleware AuthenticateSession (bootstrap/app.php) mendeteksi hash
+     * kata sandi yang berubah; sesi ini tetap berjalan.
+     */
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->password = $request->string('password')->value();
+        $user->must_change_password = false;
+        $user->save();
+
+        ActivityLog::record(ActivityAction::KataSandiDiganti, 'Mengganti kata sandi sendiri.');
 
         return response()->json(['user' => new UserResource($user)]);
     }
 
     public function logout(Request $request): Response
     {
-        ActivityLog::record('logout', 'Keluar dari CMS.');
+        ActivityLog::record(ActivityAction::Logout, 'Keluar dari CMS.');
         $this->endSession($request);
 
         return response()->noContent();

@@ -2,7 +2,7 @@
  * Aturan kata sandi akun CMS: sama dengan Password::defaults() di backend
  * (App\Providers\AppServiceProvider), yang tetap menjadi penentu akhir.
  */
-export const PASSWORD_MIN_LENGTH = 12;
+const PASSWORD_MIN_LENGTH = 12;
 
 export const PASSWORD_HINT = `Minimal ${PASSWORD_MIN_LENGTH} karakter, dengan huruf besar, huruf kecil, dan angka.`;
 

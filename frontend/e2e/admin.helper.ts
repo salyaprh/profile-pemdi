@@ -21,10 +21,15 @@ export async function fillLogin(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'Masuk' }).click();
 }
 
-/** Masuk lewat halaman Masuk dan menunggu dasbor tampil. */
-export async function loginAs(page: Page, role: keyof typeof accounts) {
+/** Masuk dengan akun mana pun dan menunggu dasbor (atau halaman tujuan) tampil. */
+export async function login(page: Page, email: string, password: string) {
   await page.goto('/admin/masuk');
-  await fillLogin(page, accounts[role].email, demoPassword());
+  await fillLogin(page, email, password);
+}
+
+/** Masuk sebagai akun demo dan menunggu dasbor tampil. */
+export async function loginAs(page: Page, role: keyof typeof accounts) {
+  await login(page, accounts[role].email, demoPassword());
   await expect(page.getByRole('heading', { name: 'Dasbor', level: 1 })).toBeVisible();
 }
 
@@ -55,13 +60,20 @@ export async function chooseFile(page: Page, button: Locator, file: string) {
 }
 
 /**
- * POST ke API dengan sesi halaman ini, termasuk header CSRF yang biasanya dikirim
- * src/services/api.ts. Untuk memastikan backend sendiri menolak aksi yang disembunyikan UI.
+ * Permintaan API dengan sesi halaman ini, termasuk header CSRF yang biasanya dikirim
+ * src/services/api.ts. Untuk memastikan backend sendiri menolak aksi yang disembunyikan UI, dan
+ * untuk menyiapkan atau memulihkan data uji.
  */
-export async function apiPost(page: Page, url: string, data: unknown) {
+export async function apiSend(
+  page: Page,
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  url: string,
+  data?: unknown,
+) {
   const cookies = await page.context().cookies();
   const xsrf = cookies.find((cookie) => cookie.name === 'XSRF-TOKEN')?.value ?? '';
-  return page.request.post(url, {
+  return page.request.fetch(url, {
+    method,
     data,
     headers: { Accept: 'application/json', 'X-XSRF-TOKEN': decodeURIComponent(xsrf) },
   });

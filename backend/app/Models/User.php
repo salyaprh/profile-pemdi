@@ -12,7 +12,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 /**
- * `role` dan `is_active` sengaja tidak bisa diisi massal: hanya diubah eksplisit oleh alur Admin.
+ * `role`, `is_active`, dan `must_change_password` sengaja tidak bisa diisi massal: hanya diubah
+ * eksplisit oleh alur Admin.
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -25,6 +26,7 @@ class User extends Authenticatable
     protected $attributes = [
         'role' => 'penulis',
         'is_active' => true,
+        'must_change_password' => false,
     ];
 
     /**
@@ -38,6 +40,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => Role::class,
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
         ];
     }
 

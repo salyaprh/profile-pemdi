@@ -28,7 +28,7 @@ function readFilters(searchParams: URLSearchParams): UserListFilters {
   };
 }
 
-export function usersUrl({ status, cari, halaman }: UserListFilters): string {
+function usersUrl({ status, cari, halaman }: UserListFilters): string {
   const params = new URLSearchParams();
   if (status !== 'semua') params.set('status', status);
   if (cari.trim()) params.set('cari', cari.trim());

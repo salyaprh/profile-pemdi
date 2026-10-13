@@ -11,13 +11,13 @@ import type {
   UploadedMedia,
 } from './types';
 
-export const articleKeys = {
+const articleKeys = {
   all: ['admin', 'articles'] as const,
   list: (filters: ArticleListFilters) => ['admin', 'articles', 'list', filters] as const,
   detail: (id: number) => ['admin', 'articles', 'detail', id] as const,
 };
 
-export const categoryKeys = { all: ['admin', 'categories'] as const };
+const categoryKeys = { all: ['admin', 'categories'] as const };
 
 function listQuery({ status, kategori, cari, halaman }: ArticleListFilters): string {
   const params = new URLSearchParams();
@@ -143,7 +143,7 @@ export function useDeleteCategory() {
 }
 
 /** Batas yang sama dengan backend (MediaUploadRequest): diperiksa di browser agar cepat ditolak. */
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 /** Pesan galat bila berkas tidak memenuhi syarat, atau null bila boleh diunggah. */

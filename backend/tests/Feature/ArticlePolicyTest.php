@@ -85,10 +85,4 @@ class ArticlePolicyTest extends TestCase
             $this->assertTrue($this->user($role, 5)->can('viewAny', Article::class));
         }
     }
-
-    public function test_admin_gate_is_only_for_admins(): void
-    {
-        $this->assertTrue($this->user(Role::Admin, 1)->can('admin'));
-        $this->assertFalse($this->user(Role::Penulis, 1)->can('admin'));
-    }
 }

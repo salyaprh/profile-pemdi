@@ -29,14 +29,14 @@ export interface UserListFilters {
   halaman: number;
 }
 
-export interface UserInput {
+interface UserInput {
   name: string;
   email: string;
   role: AdminRole;
   is_active: boolean;
 }
 
-export const userKeys = {
+const userKeys = {
   all: ['admin', 'users'] as const,
   list: (filters: UserListFilters) => ['admin', 'users', 'list', filters] as const,
   detail: (id: number) => ['admin', 'users', 'detail', id] as const,

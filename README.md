@@ -39,5 +39,23 @@ Dikerjakan bertahap, satu PR per fase:
 | 1    | Database, login (sesi cookie + CSRF), peran Admin dan Penulis, log aktivitas, halaman Masuk dan dasbor admin | Selesai    |
 | 2    | CRUD artikel dan kategori dengan editor WYSIWYG (TipTap), unggah gambar, alur tinjauan                       | Selesai    |
 | 3    | Situs publik membaca konten dari database; formulir kontak tersimpan di kotak masuk admin                    | Selesai    |
-| 4    | Pengelolaan pengguna, pengaturan situs, halaman log aktivitas                                                | Berikutnya |
-| 5    | Siap dipasang di server PANRB: Nginx, header keamanan, pratinjau tautan, panduan deploy                      |            |
+| 4    | Pengelolaan pengguna, pengaturan situs, halaman log aktivitas                                                | Selesai    |
+| 5    | Siap dipasang di server PANRB: Nginx, header keamanan, pratinjau tautan, panduan deploy                      | Berikutnya |
+
+## Pengembangan
+
+Semua pemeriksaan ini dijalankan CI pada setiap PR dan harus hijau:
+
+| Bagian   | Perintah                                                                                                           |
+| -------- | ------------------------------------------------------------------------------------------------------------------ |
+| Frontend | `npm run format:check`, `lint`, `knip` (kode mati), `typecheck`, `test` (Vitest), `build`, `test:e2e` (Playwright) |
+| Backend  | `composer lint` (Pint), `analyse` (Larastan level 6), `test` (PHPUnit), `audit`                                    |
+
+Menambah fitur baru di panel admin, urutan yang dipakai di semua fase:
+
+1. **Kontrak API dulu**: tipe dan hook di `frontend/src/admin/<sumber>/api.ts` (komentar menyebut controller backend-nya), dan data tiruan MSW untuk uji.
+2. **Halaman** di `frontend/src/admin/pages/`, didaftarkan di tabel rute `AdminApp.tsx` (tandai `adminOnly` bila khusus Admin) dan, bila perlu, di `navigation.ts`. Pakai komponen bersama (`LoadError`, `SelectField`, `DataTable`, `ConfirmDialog`, `FilterChips`) alih-alih menyalin markup.
+3. **Backend**: rute di `backend/routes/api.php` di dalam grup `admin` (otomatis `auth`, `active`, `password.changed`; tambahkan `admin` untuk khusus Admin dan daftarkan di `OPEN_TO_PENULIS` pada `AdminRoutesSecurityTest` bila terbuka bagi Penulis), FormRequest untuk validasi, Resource untuk bentuk respons, dan `ActivityAction` baru bila aksinya perlu dicatat.
+4. **Uji**: PHPUnit untuk hak akses dan validasi, Vitest untuk halaman, Playwright untuk alur penting beserta audit axe.
+
+Prinsip keamanan yang dijaga uji otomatis: hak akses ditentukan backend (frontend hanya menyembunyikan), semua isi pengguna dirender sebagai teks (HTML artikel disaring server), tautan dari data pengguna di-encode atau dibatasi `https`, rahasia tidak pernah masuk log aktivitas, dan API publik tidak membuat cookie.

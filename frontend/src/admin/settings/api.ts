@@ -3,7 +3,7 @@ import { apiRequest } from '../../services/api';
 import { contentKeys, type SiteSettings } from '../../services/content';
 
 /** Pengaturan situs (khusus Admin). Bentuk datanya sama dengan GET /api/site yang dibaca situs publik. */
-export const settingsKeys = { all: ['admin', 'settings'] as const };
+const settingsKeys = { all: ['admin', 'settings'] as const };
 
 export function useSettings() {
   return useQuery({

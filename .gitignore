@@ -30,3 +30,6 @@ test-results
 
 # Cakupan Vitest
 coverage
+
+# Cache TypeScript
+*.tsbuildinfo

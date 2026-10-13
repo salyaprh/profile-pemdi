@@ -64,7 +64,7 @@ describe('Footer', () => {
     const footer = screen.getByRole('contentinfo');
     expect(within(footer).getByRole('link', { name: 'humas@panrb.example.go.id' })).toHaveAttribute(
       'href',
-      'mailto:humas@panrb.example.go.id',
+      'mailto:humas%40panrb.example.go.id',
     );
     expect(within(footer).getByRole('link', { name: '(021) 555-1234' })).toHaveAttribute(
       'href',

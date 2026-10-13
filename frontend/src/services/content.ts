@@ -36,25 +36,25 @@ export interface PublicArticle extends ArticleSummary {
   reading_minutes: number;
 }
 
-export interface PageMeta {
+interface PageMeta {
   current_page: number;
   last_page: number;
   per_page: number;
   total: number;
 }
 
-export interface ArticlePage {
+interface ArticlePage {
   data: ArticleSummary[];
   meta: PageMeta;
 }
 
-export interface ArticleWithRelated {
+interface ArticleWithRelated {
   data: PublicArticle;
   /** Maksimal 3 artikel terbit lain dari kategori yang sama, terbaru lebih dulu. */
   related: ArticleSummary[];
 }
 
-export interface ArticleQuery {
+interface ArticleQuery {
   /** Slug kategori. */
   kategori?: string | null;
   cari?: string;
@@ -63,7 +63,7 @@ export interface ArticleQuery {
   perPage?: number;
 }
 
-export function articlesUrl({ kategori, cari, page, perPage }: ArticleQuery = {}): string {
+function articlesUrl({ kategori, cari, page, perPage }: ArticleQuery = {}): string {
   const params = new URLSearchParams();
   if (kategori) params.set('kategori', kategori);
   if (cari?.trim()) params.set('cari', cari.trim());

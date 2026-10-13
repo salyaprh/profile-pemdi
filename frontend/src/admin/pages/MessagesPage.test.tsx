@@ -150,7 +150,7 @@ describe('detail pesan', () => {
     expect(screen.getByText(/Baris kedua <b>bukan HTML<\/b>\./)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'budi@instansi.go.id' })).toHaveAttribute(
       'href',
-      'mailto:budi@instansi.go.id',
+      'mailto:budi%40instansi.go.id',
     );
     expect(screen.getByRole('link', { name: '+6281234567890' })).toHaveAttribute(
       'href',
@@ -163,6 +163,15 @@ describe('detail pesan', () => {
 
     await waitFor(() => expect(patches).toEqual([{ read: true }]));
     expect(await screen.findByRole('button', { name: 'Tandai belum dibaca' })).toBeInTheDocument();
+  });
+
+  it('alamat email pengirim yang memuat ?bcc= tidak menjadi header surel Admin (di-encode)', async () => {
+    mockSession(adminUser);
+    mockDetail({ ...unreadMessage, email: 'x@y.zz?bcc=jahat@z.example' });
+    setup('/admin/pesan/5');
+
+    const link = await screen.findByRole('link', { name: 'x@y.zz?bcc=jahat@z.example' });
+    expect(link).toHaveAttribute('href', 'mailto:x%40y.zz%3Fbcc%3Djahat%40z.example');
   });
 
   it('pesan yang sudah dibaca tidak ditandai ulang; "Tandai belum dibaca" mengirim read: false', async () => {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MediaUploadRequest;
 use App\Http\Resources\MediaResource;
@@ -18,7 +19,7 @@ class MediaController extends Controller
         abort_unless($file instanceof UploadedFile, 422, 'Pilih gambar yang akan diunggah.');
 
         $media = $storage->store($file, $request->user());
-        ActivityLog::record('media_diunggah', "Mengunggah gambar \"{$media->original_name}\".", $media);
+        ActivityLog::record(ActivityAction::MediaDiunggah, "Mengunggah gambar \"{$media->original_name}\".", $media);
 
         return (new MediaResource($media))->response()->setStatusCode(201);
     }

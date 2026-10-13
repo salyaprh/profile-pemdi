@@ -8,7 +8,7 @@ import { navigate, paths, portfolioUrl, useLocation } from '../lib/router';
 import { usePageMeta } from '../lib/seo';
 import { useArticles, useCategories } from '../services/content';
 
-export const PAGE_SIZE = 12;
+const PAGE_SIZE = 12;
 const ALL = 'semua';
 
 /**

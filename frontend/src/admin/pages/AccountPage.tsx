@@ -4,7 +4,7 @@ import { usePageMeta } from '../../lib/seo';
 import { ApiError } from '../../services/api';
 import { useChangePassword, type PasswordChange } from '../account/api';
 import { useAuthenticatedUser } from '../auth';
-import { PASSWORD_HINT, validateNewPassword } from '../password';
+import { PASSWORD_HINT, validateNewPassword } from '../account/password';
 
 type Field = keyof PasswordChange;
 type FieldErrors = Partial<Record<Field, string>>;

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Public\ArticleController;
 use App\Http\Controllers\Public\CategoryController;
 use App\Http\Controllers\Public\ContactController;
+use App\Http\Controllers\Public\SiteController;
 use Illuminate\Support\Facades\Route;
 
 // API untuk pengunjung situs publik: berprefiks /api tetapi TANPA sesi dan cookie (grup `api`,
@@ -15,6 +16,7 @@ Route::middleware('throttle:public')->group(function () {
         Route::get('articles', [ArticleController::class, 'index']);
         Route::get('articles/{slug}', [ArticleController::class, 'show'])->where('slug', '[a-z0-9-]{1,220}');
         Route::get('categories', CategoryController::class);
+        Route::get('site', SiteController::class);
     });
 
     Route::get('contact/token', [ContactController::class, 'token']);
