@@ -8,7 +8,7 @@ test.describe('HTML statis (yang dilihat crawler tanpa JavaScript)', () => {
   }) => {
     const html = await (await request.get('/portfolio/3')).text();
 
-    expect(html).toContain('<html lang="id">');
+    expect(html).toMatch(/<html[^>]*\blang="id"/);
     expect(html).toContain('property="og:type" content="website"');
     expect(html).toContain('property="og:site_name" content="PEMDI PANRB"');
     expect(html).toContain('property="og:locale" content="id_ID"');

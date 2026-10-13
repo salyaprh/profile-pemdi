@@ -77,7 +77,7 @@ test('paginasi memperbarui URL dan konten, dan Back kembali ke halaman sebelumny
   const status = page.getByRole('status').filter({ hasText: 'Menampilkan' });
   await expect(status).toContainText('Menampilkan 1-12 dari 36 artikel');
 
-  await page.getByRole('button', { name: '3', exact: true }).click();
+  await page.getByRole('link', { name: 'Halaman 3' }).click();
   await expect(page).toHaveURL(/\?halaman=3$/);
   await expect(status).toContainText('Menampilkan 25-36 dari 36 artikel');
 

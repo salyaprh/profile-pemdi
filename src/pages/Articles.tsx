@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { Chip, Pagination } from '@idds/react';
+import { Chip } from '@idds/react';
 import ArticleCard from '../components/ArticleCard';
 import ButtonLink from '../components/ButtonLink';
 import EmptyState from '../components/EmptyState';
+import PaginationNav from '../components/PaginationNav';
 import {
   articles,
   categoryOptions,
@@ -58,10 +59,6 @@ export default function Articles() {
     navigate(buildUrl(isCategoryFilter(next) ? next : 'Semua', 1), { scroll: false });
   };
 
-  const handlePageChange = (page: number) => {
-    navigate(buildUrl(selectedCategory, page));
-  };
-
   return (
     <div className="mx-auto w-full max-w-[1240px] px-5 py-8 sm:px-6 lg:px-8 lg:py-12">
       <div className="mb-8 space-y-2">
@@ -113,19 +110,13 @@ export default function Articles() {
         />
       )}
 
-      {totalPages > 1 && (
-        <div className="mt-6 md:mt-8">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={PAGE_SIZE}
-            pageSizeOptions={[PAGE_SIZE]}
-            onPageChange={handlePageChange}
-            onPageSizeChange={() => {}}
-            fullWidth
-          />
-        </div>
-      )}
+      <div className="mt-6 md:mt-8">
+        <PaginationNav
+          currentPage={currentPage}
+          totalPages={totalPages}
+          hrefFor={(page) => buildUrl(selectedCategory, page)}
+        />
+      </div>
     </div>
   );
 }

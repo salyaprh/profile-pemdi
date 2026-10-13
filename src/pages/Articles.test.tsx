@@ -62,7 +62,7 @@ describe('Articles (Portofolio)', () => {
       const user = userEvent.setup();
       render(<Articles />);
 
-      await user.click(screen.getByRole('button', { name: '2' }));
+      await user.click(screen.getByRole('link', { name: 'Halaman 2' }));
 
       expect(window.location.search).toBe('?halaman=2');
       expect(status()).toHaveTextContent('Menampilkan 13-24 dari 36 artikel');
@@ -73,7 +73,7 @@ describe('Articles (Portofolio)', () => {
       const user = userEvent.setup();
       render(<Articles />);
 
-      await user.click(screen.getByRole('button', { name: '1' }));
+      await user.click(screen.getByRole('link', { name: 'Halaman 1' }));
 
       expect(window.location.search).toBe('');
     });
@@ -136,20 +136,37 @@ describe('Articles (Portofolio)', () => {
   });
 
   describe('paginasi', () => {
-    it('ditampilkan bila lebih dari satu halaman', () => {
+    it('ditampilkan sebagai navigasi berisi tautan bila lebih dari satu halaman', () => {
       render(<Articles />);
-      const pagination = screen.getByText('Baris per halaman').closest('div[class*="pagination"]');
-      expect(pagination ?? screen.getByText('Baris per halaman')).toBeInTheDocument();
-      for (const page of ['1', '2', '3']) {
-        expect(screen.getByRole('button', { name: page })).toBeInTheDocument();
+      const nav = screen.getByRole('navigation', { name: 'Paginasi' });
+
+      expect(within(nav).getByText('Halaman 1 dari 3')).toBeInTheDocument();
+      for (const page of [1, 2, 3]) {
+        expect(within(nav).getByRole('link', { name: `Halaman ${page}` })).toHaveAttribute(
+          'href',
+          page === 1 ? '/portfolio' : `/portfolio?halaman=${page}`,
+        );
       }
+      expect(within(nav).getByRole('link', { name: 'Halaman 1' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
     });
 
-    it('tidak ditampilkan bila hasil cukup dalam satu halaman', () => {
-      // Tidak ada kategori dengan <=12 artikel pada data asli, jadi dicek lewat jumlah halaman.
-      setUrl('/portfolio');
+    it('tautan halaman mempertahankan filter kategori', () => {
+      setUrl('/portfolio?kategori=Layanan+Publik');
       render(<Articles />);
-      expect(within(document.body).queryByRole('button', { name: '4' })).not.toBeInTheDocument();
+      const nav = screen.getByRole('navigation', { name: 'Paginasi' });
+      expect(within(nav).getByRole('link', { name: 'Halaman 2' })).toHaveAttribute(
+        'href',
+        '/portfolio?kategori=Layanan+Publik&halaman=2',
+      );
+    });
+
+    it('tidak ada kontrol bernama kosong: tombol ikon tanpa nama dan <select> sudah tidak ada', () => {
+      const { container } = render(<Articles />);
+      expect(container.querySelector('select')).toBeNull();
+      expect(screen.queryByText('Baris per halaman')).not.toBeInTheDocument();
     });
   });
 });

@@ -56,17 +56,19 @@ test('Tab tidak mendarat di tautan accordion footer yang sedang tertutup (WCAG 2
   await footer.getByRole('button', { name: /Navigasi/ }).scrollIntoViewIfNeeded();
   await footer.getByRole('link', { name: 'PEMDI PANRB, ke beranda' }).focus();
 
-  const landedOnHidden: string[] = [];
+  // Tautan di dalam konten accordion yang tertutup tidak boleh menerima fokus sama sekali.
+  const focused: (string | null)[] = [];
   for (let step = 0; step < 8; step += 1) {
     await page.keyboard.press('Tab');
-    const hidden = await page.evaluate(() => {
-      const el = document.activeElement;
-      if (!el || el.tagName !== 'A' || !el.closest('.ina-accordion__content')) return null;
-      return getComputedStyle(el).visibility === 'hidden' ? null : el.textContent;
-    });
-    // Tautan di dalam konten accordion yang tertutup tidak boleh menerima fokus sama sekali.
-    if (hidden) landedOnHidden.push(hidden);
+    focused.push(
+      await page.evaluate(() => {
+        const el = document.activeElement;
+        if (!el || el.tagName !== 'A' || !el.closest('.ina-accordion__content')) return null;
+        return getComputedStyle(el).visibility === 'hidden' ? null : el.textContent;
+      }),
+    );
   }
+  const landedOnHidden = focused.filter((text) => text !== null);
   expect(landedOnHidden).toEqual([]);
 });
 

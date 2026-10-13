@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures';
+import { openSearch } from './helpers';
 
 const SITE = 'https://pemdi.example.go.id';
 
@@ -59,12 +60,19 @@ test('CSP benar-benar ditegakkan: skrip inline dan sumber dari host luar dibloki
     return (window as unknown as { __inlineRan?: boolean }).__inlineRan === true;
   });
 
-  expect(result, 'skrip inline tidak boleh berjalan').toBe(false);
-  await expect.poll(() => problems.cspViolations.length).toBeGreaterThanOrEqual(3);
-  const directives = problems.cspViolations.map((v) => v.split(' ->')[0]);
-  expect(directives).toEqual(expect.arrayContaining(['script-src', 'script-src-elem', 'img-src']));
-  // Pelanggaran ini disengaja sebagai bukti CSP aktif; kosongkan agar tidak menggagalkan fixture.
-  problems.cspViolations.length = 0;
+  try {
+    expect(result, 'skrip inline tidak boleh berjalan').toBe(false);
+    await expect.poll(() => problems.cspViolations.length).toBeGreaterThanOrEqual(3);
+    // Chromium melaporkan skrip inline/eksternal sebagai script-src-elem (turunan script-src).
+    const directives = problems.cspViolations.map((v) => v.split(' ->')[0]);
+    expect(directives.filter((d) => d === 'script-src-elem')).toHaveLength(2);
+    expect(directives).toContain('img-src');
+  } finally {
+    // Pelanggaran ini disengaja sebagai bukti CSP aktif; kosongkan agar tidak menggagalkan fixture.
+    problems.cspViolations.length = 0;
+    // Playwright melaporkan percobaan request ke evil.example meski diblokir CSP (itulah buktinya).
+    problems.externalRequests.length = 0;
+  }
 });
 
 test('situs tidak dapat disematkan di iframe (frame-ancestors / X-Frame-Options)', async ({
@@ -84,7 +92,7 @@ test('situs tidak dapat disematkan di iframe (frame-ancestors / X-Frame-Options)
 
   const embedded = page.frames().filter((frame) => frame.url().startsWith('http://localhost:4173'));
   for (const frame of embedded) {
-    expect(await frame.locator('h1').count()).toBe(0);
+    await expect(frame.locator('h1')).toHaveCount(0);
   }
   // Bukan pelanggaran kita: embedder.test hanyalah situs penyerang rekaan.
   problems.externalRequests.length = 0;
@@ -103,8 +111,8 @@ test('tidak ada permintaan ke origin lain di seluruh halaman dan interaksi utama
   await page.goto('/contact');
   await page.getByRole('button', { name: 'Pilih negara' }).click();
   await page.keyboard.press('Escape');
-  if (isMobile) await page.getByRole('button', { name: 'Buka menu' }).click();
-  await page.getByRole('textbox', { name: 'Cari artikel portofolio' }).fill('transparansi');
+  const search = await openSearch(page, isMobile);
+  await search.fill('transparansi');
   await expect(page.getByText('2 hasil pencarian')).toBeVisible();
 
   expect(problems.externalRequests).toEqual([]);
