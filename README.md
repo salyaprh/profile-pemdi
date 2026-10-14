@@ -9,6 +9,7 @@ Situs profil PEMDI / PANRB beserta CMS (sistem pengelolaan konten) agar staf dap
 | [`frontend/`](frontend/) | Situs publik (React 19 + TypeScript + Vite + IDDS) dan panel admin CMS. Lihat [README frontend](frontend/README.md).   |
 | [`backend/`](backend/)   | API CMS (Laravel 13, PHP 8.3+): login, pengelolaan konten, formulir kontak. Lihat [README backend](backend/README.md). |
 | [`deploy/`](deploy/)     | Konfigurasi Nginx dan panduan memasang di server. Lihat [panduan deploy](deploy/README.md).                            |
+| [`docs/`](docs/)         | [Panduan admin](docs/panduan-admin.md) untuk tim konten (menulis, meninjau, mengelola akun).                           |
 | [`.github/`](.github/)   | CI (frontend, backend PHP 8.3 dan 8.5, e2e) dan Dependabot.                                                            |
 
 Di produksi, frontend dan backend disajikan dari **satu origin** lewat Nginx: berkas statis frontend untuk halaman, dan Laravel (PHP-FPM) untuk `/api`. Dengan begitu login memakai cookie sesi + CSRF tanpa CORS, dan CSP `connect-src 'self'` tetap ketat.
