@@ -30,8 +30,9 @@ class UserController extends Controller
     /** Filter: ?status=aktif|nonaktif, ?cari=<nama atau email>, ?page=<n>. */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $status = $request->string('status')->value();
-        $search = mb_substr($request->string('cari')->trim()->value(), 0, 100);
+        $filters = $request->validate(['status' => ['nullable', 'string'], 'cari' => ['nullable', 'string']]);
+        $status = $filters['status'] ?? '';
+        $search = mb_substr(trim($filters['cari'] ?? ''), 0, 100);
 
         $users = User::query()
             ->withCount('articles')

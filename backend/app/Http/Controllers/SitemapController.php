@@ -21,7 +21,8 @@ class SitemapController extends Controller
         Article::query()
             ->published()
             ->latest('published_at')
-            ->select(['slug', 'updated_at'])
+            ->latest('id') // urutan tetap saat tanggal terbit sama, agar potongan (chunk) tidak menggandakan/melewatkan baris
+            ->select(['id', 'slug', 'updated_at'])
             ->each(function (Article $article) use ($base, &$entries): void {
                 $entries[] = $this->entry(
                     $base.'/portfolio/'.rawurlencode($article->slug),

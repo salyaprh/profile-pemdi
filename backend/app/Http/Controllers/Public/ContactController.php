@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Formulir "Hubungi kami" untuk pengunjung (tanpa sesi dan tanpa cookie). Perlindungan spam:
- * pembatasan laju per IP, kolom jebakan bot, dan token waktu terenkripsi.
+ * pembatasan laju per IP, kolom jebakan bot, dan token waktu terenkripsi (pengiriman terlalu cepat
+ * ditolak 422 dengan pesan yang jelas, lihat ContactMessageRequest).
  */
 class ContactController extends Controller
 {

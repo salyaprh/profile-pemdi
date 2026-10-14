@@ -19,9 +19,6 @@ class ContactMessageRequest extends FormRequest
 
     private const EMAIL_PATTERN = '/^[^\s@]+@[^\s@]+\.[^\s@]+$/';
 
-    /** Waktu formulir dibuka (dari token), diisi saat validasi. */
-    private ?int $formOpenedAt = null;
-
     public function authorize(): bool
     {
         return true;
@@ -33,7 +30,12 @@ class ContactMessageRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        $phone = preg_replace('/[\s\-()]/', '', (string) $this->input('phone', ''));
+        $phone = $this->input('phone');
+        if (! is_string($phone)) {
+            return; // bukan teks (mis. array): dibiarkan agar ditolak aturan `string` di bawah
+        }
+
+        $phone = preg_replace('/[\s\-()]/', '', $phone);
         $this->merge(['phone' => preg_match('/^\+?\d{0,3}$/', (string) $phone) ? null : $phone]);
     }
 
@@ -43,13 +45,13 @@ class ContactMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'min:3', 'max:100'],
-            'email' => ['required', 'string', 'max:254', 'regex:'.self::EMAIL_PATTERN],
-            'phone' => ['nullable', 'string', 'regex:/^\+?\d{10,15}$/'],
-            'subject' => ['required', 'string', 'max:150'],
-            'message' => ['required', 'string', 'min:10', 'max:1000'],
-            'token' => ['required', 'string'],
-            self::HONEYPOT_FIELD => ['nullable', 'string'],
+            'name' => ['bail', 'required', 'string', 'min:3', 'max:100'],
+            'email' => ['bail', 'required', 'string', 'max:254', 'regex:'.self::EMAIL_PATTERN],
+            'phone' => ['bail', 'nullable', 'string', 'regex:/^\+?\d{10,15}$/'],
+            'subject' => ['bail', 'required', 'string', 'max:150'],
+            'message' => ['bail', 'required', 'string', 'min:10', 'max:1000'],
+            'token' => ['bail', 'required', 'string'],
+            self::HONEYPOT_FIELD => ['bail', 'nullable', 'string'],
         ];
     }
 
@@ -98,20 +100,20 @@ class ContactMessageRequest extends FormRequest
 
                     return;
                 }
-                $this->formOpenedAt = $openedAt;
+                // Terlalu cepat dijawab 422 (bukan dibuang diam-diam): pengunjung sungguhan yang memakai
+                // isi-otomatis browser bisa mengirim dalam hitungan detik, dan pesannya tidak boleh hilang
+                // tanpa kabar. Frontend mengambil token baru; kirim ulang beberapa detik kemudian berhasil.
+                if (now()->getTimestamp() - $openedAt < (int) config('pemdi.contact.min_seconds')) {
+                    $validator->errors()->add('token', 'Formulir dikirim terlalu cepat. Tunggu beberapa detik lalu kirim ulang.');
+                }
             },
         ];
     }
 
-    /**
-     * Ciri pengirim bot: kolom jebakan terisi, atau formulir dikirim lebih cepat dari batas wajar.
-     */
+    /** Kolom jebakan terisi: hanya bot yang mengisi kolom yang tersembunyi dari pengguna. */
     public function looksAutomated(): bool
     {
-        $tooFast = $this->formOpenedAt !== null
-            && now()->getTimestamp() - $this->formOpenedAt < (int) config('pemdi.contact.min_seconds');
-
-        return $this->filled(self::HONEYPOT_FIELD) || $tooFast;
+        return $this->filled(self::HONEYPOT_FIELD);
     }
 
     /**

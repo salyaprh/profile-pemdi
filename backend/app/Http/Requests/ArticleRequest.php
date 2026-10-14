@@ -26,15 +26,15 @@ class ArticleRequest extends FormRequest
         $article = $this->route('article');
 
         return [
-            'title' => ['required', 'string', 'min:5', 'max:200'],
-            'slug' => [
+            'title' => ['bail', 'required', 'string', 'min:5', 'max:200'],
+            'slug' => ['bail',
                 'nullable', 'string', 'max:220', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
                 Rule::unique(Article::class, 'slug')->ignore($article instanceof Article ? $article->id : null),
             ],
-            'excerpt' => ['required', 'string', 'min:20', 'max:300'],
-            'body_html' => ['required', 'string', 'max:'.ArticleHtmlSanitizer::MAX_LENGTH],
-            'category_id' => ['required', 'integer', Rule::exists('categories', 'id')],
-            'cover_url' => [
+            'excerpt' => ['bail', 'required', 'string', 'min:20', 'max:300'],
+            'body_html' => ['bail', 'required', 'string', 'max:'.ArticleHtmlSanitizer::MAX_LENGTH],
+            'category_id' => ['bail', 'required', 'integer', Rule::exists('categories', 'id')],
+            'cover_url' => ['bail',
                 'nullable', 'string', 'max:255',
                 function (string $attribute, mixed $value, Closure $fail): void {
                     if (is_string($value) && ! MediaUrl::isAllowedCover($value)) {
@@ -42,9 +42,9 @@ class ArticleRequest extends FormRequest
                     }
                 },
             ],
-            'source' => ['nullable', 'string', 'max:255'],
+            'source' => ['bail', 'nullable', 'string', 'max:255'],
             // Penguncian optimistis: waktu `updated_at` artikel saat formulir dibuka.
-            'updated_at' => ['nullable', 'date'],
+            'updated_at' => ['bail', 'nullable', 'date'],
         ];
     }
 

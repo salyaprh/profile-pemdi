@@ -14,7 +14,7 @@ class ResetPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'password' => ['required', 'string', 'max:255', Password::defaults()],
+            'password' => ['bail', 'required', 'string', 'max:255', Password::defaults()],
         ];
     }
 

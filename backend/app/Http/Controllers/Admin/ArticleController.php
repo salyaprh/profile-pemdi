@@ -33,7 +33,12 @@ class ArticleController extends Controller
     {
         Gate::authorize('viewAny', Article::class);
         $user = $request->user();
-        $status = $request->string('status')->value();
+        $filters = $request->validate([
+            'status' => ['nullable', 'string'],
+            'kategori' => ['nullable', 'integer'],
+            'cari' => ['nullable', 'string'],
+        ]);
+        $status = $filters['status'] ?? '';
 
         $query = Article::query()->with(['category', 'author']);
 
@@ -48,11 +53,11 @@ class ArticleController extends Controller
             $query->where('author_id', $user->id);
         }
 
-        if ($request->filled('kategori')) {
-            $query->where('category_id', $request->integer('kategori'));
+        if (isset($filters['kategori'])) {
+            $query->where('category_id', (int) $filters['kategori']);
         }
 
-        $search = trim($request->string('cari')->value());
+        $search = trim($filters['cari'] ?? '');
         if ($search !== '') {
             LikePattern::whereAnyContains($query, ['title'], $search);
         }

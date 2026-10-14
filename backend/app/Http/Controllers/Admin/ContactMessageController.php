@@ -22,8 +22,10 @@ class ContactMessageController extends Controller
     /** Filter: ?status=belum-dibaca, ?page=<n>. */
     public function index(Request $request): AnonymousResourceCollection
     {
+        $filters = $request->validate(['status' => ['nullable', 'string']]);
+
         $messages = ContactMessage::query()
-            ->when($request->string('status')->value() === 'belum-dibaca', fn ($query) => $query->whereNull('read_at'))
+            ->when(($filters['status'] ?? '') === 'belum-dibaca', fn ($query) => $query->whereNull('read_at'))
             ->latest('created_at')
             ->latest('id')
             ->paginate(self::PER_PAGE)

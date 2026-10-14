@@ -31,8 +31,9 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email', 'max:255'],
-            'password' => ['required', 'string', 'max:255'],
+            // bail + max lebih dulu: validator email (RFC) sangat boros memori pada string yang sangat panjang.
+            'email' => ['bail', 'required', 'string', 'max:255', 'email'],
+            'password' => ['bail', 'required', 'string', 'max:255'],
         ];
     }
 

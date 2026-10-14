@@ -24,7 +24,10 @@ class UserRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Email tidak peka huruf besar/kecil: disimpan dan dibandingkan dalam huruf kecil.
-        $this->merge(['email' => mb_strtolower(trim($this->string('email')->value()))]);
+        $email = $this->input('email');
+        if (is_string($email)) { // bukan teks (mis. array): dibiarkan agar ditolak aturan `string`
+            $this->merge(['email' => mb_strtolower(trim($email))]);
+        }
     }
 
     /**
@@ -35,11 +38,12 @@ class UserRequest extends FormRequest
         $creating = $this->target() === null;
 
         return [
-            'name' => ['required', 'string', 'min:3', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($this->target()?->id)],
-            'role' => ['required', Rule::in(array_column(Role::cases(), 'value'))],
-            'is_active' => [$creating ? 'prohibited' : 'required', 'boolean'],
-            'password' => [$creating ? 'required' : 'prohibited', 'string', 'max:255', Password::defaults()],
+            'name' => ['bail', 'required', 'string', 'min:3', 'max:255'],
+            // bail + max lebih dulu: validator email (RFC) sangat boros memori pada string yang sangat panjang.
+            'email' => ['bail', 'required', 'string', 'max:255', 'email', Rule::unique(User::class, 'email')->ignore($this->target()?->id)],
+            'role' => ['bail', 'required', Rule::in(array_column(Role::cases(), 'value'))],
+            'is_active' => ['bail', $creating ? 'prohibited' : 'required', 'boolean'],
+            'password' => ['bail', $creating ? 'required' : 'prohibited', 'string', 'max:255', Password::defaults()],
         ];
     }
 

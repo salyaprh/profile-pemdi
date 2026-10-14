@@ -16,17 +16,17 @@ class SiteSettingsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'description' => ['required', 'string', 'min:20', 'max:300'],
-            'hero_stats' => ['required', 'array', 'size:3'],
-            'hero_stats.*.value' => ['required', 'string', 'max:10'],
-            'hero_stats.*.label' => ['required', 'string', 'max:60'],
-            'contact.email' => ['nullable', 'string', 'email', 'max:254'],
-            'contact.phone' => ['nullable', 'string', 'regex:/^\+?[\d\s().-]{6,30}$/'],
-            'contact.address' => ['nullable', 'string', 'max:300'],
-            'social.facebook' => ['nullable', 'string', 'url:https', 'max:255'],
-            'social.instagram' => ['nullable', 'string', 'url:https', 'max:255'],
-            'social.x' => ['nullable', 'string', 'url:https', 'max:255'],
-            'social.youtube' => ['nullable', 'string', 'url:https', 'max:255'],
+            'description' => ['bail', 'required', 'string', 'min:20', 'max:300'],
+            'hero_stats' => ['bail', 'required', 'array', 'size:3'],
+            'hero_stats.*.value' => ['bail', 'required', 'string', 'max:10'],
+            'hero_stats.*.label' => ['bail', 'required', 'string', 'max:60'],
+            'contact.email' => ['bail', 'nullable', 'string', 'max:254', 'email'],
+            'contact.phone' => ['bail', 'nullable', 'string', 'regex:/^\+?[\d\s().-]{6,30}$/'],
+            'contact.address' => ['bail', 'nullable', 'string', 'max:300'],
+            'social.facebook' => ['bail', 'nullable', 'string', 'url:https', 'max:255'],
+            'social.instagram' => ['bail', 'nullable', 'string', 'url:https', 'max:255'],
+            'social.x' => ['bail', 'nullable', 'string', 'url:https', 'max:255'],
+            'social.youtube' => ['bail', 'nullable', 'string', 'url:https', 'max:255'],
         ];
     }
 

@@ -109,18 +109,23 @@ class ContactMessageTest extends TestCase
         $this->assertSame(0, ContactMessage::count());
     }
 
-    public function test_honeypot_and_too_fast_submissions_look_accepted_but_are_not_stored(): void
+    public function test_a_filled_honeypot_looks_accepted_but_is_not_stored(): void
     {
         $this->postJson('/api/contact', $this->payload(['kolom_khusus' => 'https://spam.example']))
             ->assertStatus(202)
             ->assertExactJson(['message' => 'Pesan diterima.']);
-        $this->postJson('/api/contact', $this->payload(['token' => $this->tokenOpenedSecondsAgo(1)]))
-            ->assertStatus(202);
 
         $this->assertSame(0, ContactMessage::count());
+    }
 
-        $this->postJson('/api/contact', $this->payload(['token' => $this->tokenOpenedSecondsAgo(3)]))
-            ->assertStatus(202);
+    public function test_a_too_fast_submission_is_told_to_retry_instead_of_being_dropped_silently(): void
+    {
+        $this->postJson('/api/contact', $this->payload(['token' => $this->tokenOpenedSecondsAgo(1)]))
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.token.0', 'Formulir dikirim terlalu cepat. Tunggu beberapa detik lalu kirim ulang.');
+        $this->assertSame(0, ContactMessage::count());
+
+        $this->postJson('/api/contact', $this->payload(['token' => $this->tokenOpenedSecondsAgo(3)]))->assertStatus(202);
         $this->assertSame(1, ContactMessage::count());
     }
 

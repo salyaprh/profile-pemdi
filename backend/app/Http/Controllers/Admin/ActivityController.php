@@ -18,7 +18,8 @@ class ActivityController extends Controller
     /** Filter: ?kelompok=login|artikel|kategori|pesan|pengguna|pengaturan, ?page=<n>. */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $group = ActivityGroup::tryFrom($request->string('kelompok')->value());
+        $filters = $request->validate(['kelompok' => ['nullable', 'string']]);
+        $group = ActivityGroup::tryFrom($filters['kelompok'] ?? '');
 
         $entries = ActivityLog::query()
             ->with('user')

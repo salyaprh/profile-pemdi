@@ -17,7 +17,7 @@ class MediaUploadRequest extends FormRequest
         return [
             // `image` di Laravel menolak SVG (bisa berisi skrip). Batas dimensi mencegah "bom
             // dekompresi" (berkas kecil yang membengkak menjadi gambar raksasa di memori).
-            'file' => [
+            'file' => ['bail',
                 'required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:'.self::MAX_KILOBYTES,
                 'dimensions:min_width=200,min_height=200,max_width=8000,max_height=8000',
             ],

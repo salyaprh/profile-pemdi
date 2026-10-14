@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -15,6 +16,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Dibaca dari config (bukan env() di bootstrap): env() bernilai null saat `config:cache` aktif.
+        $proxies = config('pemdi.trusted_proxies');
+        if (is_array($proxies) && $proxies !== []) {
+            TrustProxies::at($proxies === ['*'] ? '*' : $proxies);
+        }
+
         // Kebijakan kata sandi akun CMS. Tanpa cek kebocoran (uncompromised) karena itu memanggil
         // layanan pihak ketiga, sedangkan server PANRB belum tentu boleh mengakses internet.
         Password::defaults(fn () => Password::min(12)->letters()->mixedCase()->numbers());
