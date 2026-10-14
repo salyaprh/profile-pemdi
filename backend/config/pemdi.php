@@ -15,6 +15,13 @@ return [
     'media_directory' => env('MEDIA_DIRECTORY', 'media'),
 
     /*
+    | Gambar unggahan yang tidak dipakai artikel mana pun (termasuk yang di sampah) dihapus setelah
+    | sekian hari, oleh `pemdi:bersihkan-media` yang dijadwalkan harian. Tenggang ini memberi waktu bagi
+    | Penulis yang baru mengunggah gambar tetapi belum menyimpan artikelnya.
+    */
+    'media_orphan_days' => (int) env('MEDIA_ORPHAN_DAYS', 7),
+
+    /*
     | Reverse proxy/CDN yang dipercaya untuk membaca IP pengunjung dari X-Forwarded-For: alamat
     | dipisah koma, atau * bila hanya proxy yang dapat menjangkau server. Kosong = tidak ada (Nginx +
     | PHP-FPM langsung). Tanpa ini semua pengunjung di balik proxy tampak berasal dari satu IP, sehingga

@@ -133,7 +133,7 @@ Galat dikembalikan sebagai JSON (`message`, dan `errors` per kolom untuk 422). A
 | `composer analyse` | Analisis statis Larastan (PHPStan level 6) |
 | `composer audit`   | Cek kerentanan dependency                  |
 
-Jadwal (`php artisan schedule:list`): `model:prune` harian untuk pesan kontak dan log aktivitas yang melewati masa simpan.
+Jadwal (`php artisan schedule:list`): `model:prune` harian untuk pesan kontak dan log aktivitas yang melewati masa simpan, dan `pemdi:bersihkan-media` harian untuk gambar unggahan yang tidak dipakai artikel mana pun (termasuk artikel di sampah) dan lebih tua dari `MEDIA_ORPHAN_DAYS` (bawaan 7 hari, tenggang bagi Penulis yang belum menyimpan artikelnya). Perintah ini mencari gambar lewat URL `/storage/<folder>/<uuid>.webp` di sampul dan isi artikel.
 
 Semua perintah di atas dijalankan CI pada PHP 8.3 (versi minimum) dan versi terbaru. Uji e2e di `../frontend` juga menyalakan backend ini dengan database SQLite sementara dan folder unggahan terpisah `media-e2e` (`../frontend/e2e/start-backend.mjs`).
 
