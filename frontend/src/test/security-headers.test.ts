@@ -137,7 +137,7 @@ describe('Content-Security-Policy', () => {
 });
 
 describe('deploy/nginx.conf.example', () => {
-  const nginx = read('deploy/nginx.conf.example');
+  const nginx = read('../deploy/nginx.conf.example');
 
   it('memakai CSP yang persis sama dengan public/_headers (hindari drift)', () => {
     const nginxCsp = /add_header Content-Security-Policy "([^"]+)"/.exec(nginx)?.[1];

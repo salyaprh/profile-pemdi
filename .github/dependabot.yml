@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: npm
-    directory: /
+    directory: /frontend
     schedule:
       interval: weekly
       day: monday
@@ -31,12 +31,27 @@ updates:
       # jsdom >= 28 mensyaratkan Node >= 22.22, padahal engines mengizinkan Node 22.12.
       - dependency-name: jsdom
         update-types: ['version-update:semver-major']
-      # Tipe Node harus sejajar dengan Node minimum yang didukung (20/22), bukan Node terbaru.
+      # Tipe Node harus sejajar dengan Node minimum yang didukung (22), bukan Node terbaru.
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
       # typescript-eslint mensyaratkan TypeScript < 6.1.
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
+
+  - package-ecosystem: composer
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      prod-dependencies:
+        dependency-type: production
+        update-types: [minor, patch]
 
   - package-ecosystem: github-actions
     directory: /
