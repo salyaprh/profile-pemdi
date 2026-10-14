@@ -15,6 +15,13 @@ return [
     'media_directory' => env('MEDIA_DIRECTORY', 'media'),
 
     /*
+    | index.html hasil build frontend (`npm run build`), disisipi meta tiap artikel oleh
+    | PublicArticlePageController supaya pratinjau tautan (WhatsApp, dll.) benar. Bawaannya sesuai
+    | susunan repo; ubah bila frontend dipasang di folder lain.
+    */
+    'frontend_index' => env('FRONTEND_INDEX', base_path('../frontend/dist/index.html')),
+
+    /*
     | Gambar unggahan yang tidak dipakai artikel mana pun (termasuk yang di sampah) dihapus setelah
     | sekian hari, oleh `pemdi:bersihkan-media` yang dijadwalkan harian. Tenggang ini memberi waktu bagi
     | Penulis yang baru mengunggah gambar tetapi belum menyimpan artikelnya.

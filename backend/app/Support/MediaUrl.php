@@ -36,4 +36,15 @@ final class MediaUrl
     {
         return self::isUploaded($url) || preg_match('#^/images/articles/[a-z0-9-]+\.webp$#', $url) === 1;
     }
+
+    /**
+     * Gambar untuk pratinjau tautan (og:image): unggahan memakai versi 1200x630 -og; gambar bawaan
+     * situs dipakai apa adanya.
+     */
+    public static function previewImage(string $url): string
+    {
+        return self::isUploaded($url) && ! str_ends_with($url, '-og.webp')
+            ? substr($url, 0, -strlen('.webp')).'-og.webp'
+            : $url;
+    }
 }

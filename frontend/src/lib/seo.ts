@@ -44,8 +44,9 @@ interface PageMeta {
  * Memperbarui <title> dan meta SEO sesuai halaman aktif. URL kanonis/og:url
  * hanya diisi bila VITE_SITE_URL diset (harus absolut).
  *
- * Catatan: ini dieksekusi di browser. Mesin pencari yang menjalankan JS membacanya,
- * tetapi pratinjau tautan (WhatsApp, dll.) hanya membaca meta statis di index.html.
+ * Catatan: ini dieksekusi di browser. Mesin pencari yang menjalankan JS membacanya, tetapi
+ * pratinjau tautan (WhatsApp, dll.) hanya membaca HTML awal: meta statis di index.html, dan untuk
+ * halaman artikel meta yang disisipkan backend (FrontendPage).
  */
 export function usePageMeta({
   title,
