@@ -1,6 +1,6 @@
 # Memasang di server
 
-Panduan memasang CMS di server Linux dengan Nginx dan PHP-FPM. Konfigurasi Nginx-nya ada di [`nginx.conf`](nginx.conf). Panduan dan konfigurasi ini **belum diuji di server nyata**: jalankan `nginx -t`, ikuti daftar pemeriksaan di bawah, dan sesuaikan dengan kebijakan tim infrastruktur.
+Panduan memasang CMS di server Linux dengan Nginx dan PHP-FPM. Konfigurasi Nginx-nya ada di [`nginx.conf`](nginx.conf). Konfigurasi ini sudah diuji di lokal dengan Nginx 1.31 dan PHP-FPM sungguhan (sintaks, header, rute ke Laravel, `/storage` tanpa eksekusi PHP, batas unggahan 8 MB, berkas tersembunyi), tetapi **belum di server nyata**: jalankan `nginx -t`, ikuti daftar pemeriksaan di bawah, dan sesuaikan dengan kebijakan tim infrastruktur.
 
 ## Kebutuhan
 

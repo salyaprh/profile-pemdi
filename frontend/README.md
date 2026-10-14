@@ -119,7 +119,7 @@ Hasil build adalah berkas statis (`dist/`). Persyaratan hosting:
 | **Cloudflare Pages** (rekomendasi) | `public/_headers` terbaca otomatis. SPA fallback bawaan **selama tidak ada `404.html` di root** (jangan menambahkannya, dan tidak perlu `_redirects`). Build: `npm run build`, output: `dist`. |
 | **Netlify**                        | `_headers` terbaca otomatis; tambahkan `public/_redirects` berisi `/* /index.html 200`.                                                                                                        |
 | **Vercel**                         | Terjemahkan isi `_headers` ke `vercel.json` (`headers`) dan tambahkan `rewrites` ke `/index.html`.                                                                                             |
-| **Server sendiri / PDN**           | Lihat `../deploy/README.md` dan `../deploy/nginx.conf` (belum diuji di server nyata).                                                                                                          |
+| **Server sendiri / PDN**           | Lihat `../deploy/README.md` dan `../deploy/nginx.conf` (diuji di lokal, belum di server nyata).                                                                                                |
 
 Catatan:
 
