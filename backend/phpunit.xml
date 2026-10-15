@@ -19,6 +19,8 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- Kunci khusus uji (bukan rahasia): uji tidak boleh bergantung pada .env, yang tidak ada di CI. -->
+        <env name="APP_KEY" value="base64:a3VuY2kta2h1c3VzLXVqaS1idWthbi1yYWhhc2lhLXg="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>

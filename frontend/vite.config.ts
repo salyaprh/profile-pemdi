@@ -9,6 +9,10 @@ import { seo } from './vite-plugins/seo';
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
+  const backendUrl = process.env.BACKEND_URL ?? 'http://127.0.0.1:8000';
+  const backendProxy = Object.fromEntries(
+    ['/api', '/storage'].map((prefix) => [prefix, { target: backendUrl }]),
+  );
 
   return {
     plugins: [
@@ -20,10 +24,17 @@ export default defineConfig(({ mode }) => {
         articlesFile: fileURLToPath(new URL('./src/data/articlesData.ts', import.meta.url)),
       }),
     ],
+    // Backend Laravel (php artisan serve) di-proxy agar satu origin seperti di produksi: cookie sesi
+    // dan CSRF berlaku tanpa CORS. Atur BACKEND_URL bila server API tidak di port 8000.
+    server: { proxy: backendProxy },
+    preview: { proxy: backendProxy },
     test: {
       environment: 'jsdom',
       setupFiles: ['./src/test/setup.ts'],
       include: ['src/**/*.test.{ts,tsx}', 'vite-plugins/**/*.test.ts'],
+      // Node >= 25 memasang localStorage bawaan yang menutupi milik jsdom (bernilai undefined tanpa
+      // --localstorage-file). Matikan agar uji memakai localStorage jsdom seperti di browser.
+      execArgv: ['--no-experimental-webstorage'],
       restoreMocks: true,
       mockReset: true,
       unstubEnvs: true,

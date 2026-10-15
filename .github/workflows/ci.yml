@@ -100,7 +100,8 @@ jobs:
         run: composer test
 
   # Uji end-to-end di browser nyata terhadap build produksi yang dilayani dengan header dari
-  # frontend/public/_headers: CSP, keamanan, SEO, routing, pencarian, formulir, dan audit axe.
+  # frontend/public/_headers, dengan /api diteruskan ke backend Laravel sungguhan (SQLite e2e):
+  # CSP, keamanan, SEO, routing, pencarian, formulir, login/panel admin, dan audit axe.
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -118,13 +119,24 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          extensions: gd, intl, pdo_sqlite
+          coverage: none
+
+      - name: Install dependency backend
+        working-directory: backend
+        run: composer install --no-interaction --no-progress --prefer-dist
+
       - name: Install dependency sesuai lockfile
         run: npm ci
 
       - name: Pasang Chromium untuk Playwright
         run: npx playwright install --with-deps chromium
 
-      # Playwright membangun situs dan menyalakan server uji sendiri (webServer di playwright.config.ts).
+      # Playwright menyalakan backend (e2e/start-backend.mjs) dan membangun serta melayani situs
+      # (e2e/start.mjs) sendiri; lihat webServer di playwright.config.ts.
       - name: Uji e2e (Playwright)
         run: npm run test:e2e
 

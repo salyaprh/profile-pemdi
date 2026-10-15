@@ -3,7 +3,11 @@ import '@testing-library/jest-dom/vitest';
 // antar uji (98 uji gagal saat dicoba). Karena itu aturan no-manual-cleanup dinonaktifkan di sini.
 // eslint-disable-next-line testing-library/no-manual-cleanup
 import { cleanup } from '@testing-library/react';
-import { afterEach, beforeEach, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
+import { clearCookies, server } from './server';
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterAll(() => server.close());
 
 beforeEach(() => {
   // jsdom tidak mengimplementasikan scrollTo; router memanggilnya saat berpindah halaman.
@@ -13,6 +17,9 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  server.resetHandlers();
+  clearCookies();
+  window.localStorage.clear();
   document.head
     .querySelectorAll('meta[name], meta[property], link[rel="canonical"]')
     .forEach((el) => {

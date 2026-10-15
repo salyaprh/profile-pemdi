@@ -1,10 +1,15 @@
+import { lazy, Suspense } from 'react';
+import AdminLoadingScreen from './admin/AdminLoadingScreen';
 import Layout from './components/Layout';
-import { paths, useLocation } from './lib/router';
+import { isAdminPath, paths, useLocation } from './lib/router';
 import ArticleDetail from './pages/ArticleDetail';
 import Articles from './pages/Articles';
 import Contact from './pages/Contact';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
+
+// Kode panel admin dipisah ke chunk sendiri: pengunjung situs publik tidak mengunduhnya.
+const AdminApp = lazy(() => import('./admin/AdminApp'));
 
 function decodeSegment(segment: string): string | null {
   try {
@@ -30,5 +35,14 @@ function renderRoute(pathname: string) {
 
 export default function App() {
   const { pathname } = useLocation();
+
+  if (isAdminPath(pathname)) {
+    return (
+      <Suspense fallback={<AdminLoadingScreen />}>
+        <AdminApp />
+      </Suspense>
+    );
+  }
+
   return <Layout>{renderRoute(pathname)}</Layout>;
 }

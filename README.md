@@ -18,22 +18,24 @@ Di produksi, frontend dan backend disajikan dari **satu origin** lewat Nginx: be
 Butuh Node.js 22.12+, PHP 8.3+, dan Composer.
 
 ```bash
-cd backend && composer setup && composer dev    # API di http://localhost:8000
+cd backend && composer setup && php artisan db:seed && composer dev   # API di http://localhost:8000
 ```
 
 ```bash
-cd frontend && npm install && npm run dev       # situs di http://localhost:5173
+cd frontend && npm install && npm run dev                             # situs di http://localhost:5173
 ```
+
+Panel admin ada di `http://localhost:5173/admin`. Akun demo lokal dijelaskan di [README backend](backend/README.md#menjalankan).
 
 ## Rencana CMS
 
 Dikerjakan bertahap, satu PR per fase:
 
-| Fase | Isi                                                                                        | Status     |
-| ---- | ------------------------------------------------------------------------------------------ | ---------- |
-| 0    | Monorepo `frontend/` + `backend/`, kerangka Laravel, CI backend                            | Selesai    |
-| 1    | Database, login (Sanctum SPA), peran Admin dan Penulis, log aktivitas, halaman Masuk admin | Berikutnya |
-| 2    | CRUD artikel dan kategori dengan editor WYSIWYG (TipTap), unggah gambar, alur tinjauan     |            |
-| 3    | Situs publik membaca konten dari database; formulir kontak tersimpan di kotak masuk admin  |            |
-| 4    | Pengelolaan pengguna, pengaturan situs, halaman log aktivitas                              |            |
-| 5    | Siap dipasang di server PANRB: Nginx, header keamanan, pratinjau tautan, panduan deploy    |            |
+| Fase | Isi                                                                                                          | Status     |
+| ---- | ------------------------------------------------------------------------------------------------------------ | ---------- |
+| 0    | Monorepo `frontend/` + `backend/`, kerangka Laravel, CI backend                                              | Selesai    |
+| 1    | Database, login (sesi cookie + CSRF), peran Admin dan Penulis, log aktivitas, halaman Masuk dan dasbor admin | Selesai    |
+| 2    | CRUD artikel dan kategori dengan editor WYSIWYG (TipTap), unggah gambar, alur tinjauan                       | Berikutnya |
+| 3    | Situs publik membaca konten dari database; formulir kontak tersimpan di kotak masuk admin                    |            |
+| 4    | Pengelolaan pengguna, pengaturan situs, halaman log aktivitas                                                |            |
+| 5    | Siap dipasang di server PANRB: Nginx, header keamanan, pratinjau tautan, panduan deploy                      |            |
