@@ -4,19 +4,46 @@ import { seeded } from './helpers';
 const SITE = 'https://pemdi.example.go.id';
 
 test.describe('HTML statis (yang dilihat crawler tanpa JavaScript)', () => {
-  test('memuat meta tingkat situs, bahasa Indonesia, dan TIDAK memuat canonical/og:url', async ({
+  test('halaman umum memuat meta tingkat situs, bahasa Indonesia, dan TIDAK memuat canonical/og:url', async ({
     request,
   }) => {
-    const html = await (await request.get(`/portfolio/${seeded.serviceArticle.slug}`)).text();
+    const html = await (await request.get('/portfolio')).text();
 
     expect(html).toMatch(/<html[^>]*\blang="id"/);
     expect(html).toContain('property="og:type" content="website"');
     expect(html).toContain('property="og:site_name" content="PEMDI PANRB"');
     expect(html).toContain('property="og:locale" content="id_ID"');
     expect(html).toContain('name="description"');
-    // HTML yang sama dilayani untuk semua path, jadi canonical statis akan salah untuk semua artikel.
+    // HTML yang sama dilayani untuk semua halaman umum, jadi canonical statis akan salah.
     expect(html).not.toContain('rel="canonical"');
     expect(html).not.toContain('property="og:url"');
+  });
+
+  test('halaman artikel membawa judul, deskripsi, dan URL kanonis artikel itu sendiri (pratinjau tautan)', async ({
+    request,
+  }) => {
+    const { slug, title } = seeded.serviceArticle;
+    const response = await request.get(`/portfolio/${slug}`);
+    const html = await response.text();
+
+    expect(response.status()).toBe(200);
+    expect(html).toContain(`<title>${title} | PEMDI PANRB</title>`);
+    expect(html).toContain(`property="og:title" content="${title} | PEMDI PANRB"`);
+    expect(html).toContain('property="og:type" content="article"');
+    expect(html).toContain(`<link rel="canonical" href="${SITE}/portfolio/${slug}" />`);
+    expect(html).toContain(`property="og:url" content="${SITE}/portfolio/${slug}"`);
+    // Aplikasi tetap dimuat, dan header keamanan (CSP) ikut diterapkan.
+    expect(html).toContain('<div id="root">');
+    expect(response.headers()['content-security-policy']).toContain("default-src 'self'");
+  });
+
+  test('artikel yang tidak ada dijawab 404 dengan halaman aplikasi, bukan error server', async ({
+    request,
+  }) => {
+    const response = await request.get('/portfolio/artikel-yang-tidak-ada');
+
+    expect(response.status()).toBe(404);
+    expect(await response.text()).toContain('<div id="root">');
   });
 });
 

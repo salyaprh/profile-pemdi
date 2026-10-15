@@ -89,7 +89,7 @@ src/
   test/               setup Vitest, server.ts (MSW), publicApi.ts (API publik tiruan bawaan), utils.tsx
 vite-plugins/         selfHostFonts.ts (buang @import Google Fonts dari CSS IDDS), seo.ts (robots.txt)
 public/               panrb.svg, images/articles/*, _headers (header keamanan + cache)
-../deploy/            nginx.conf.example (hosting sendiri/PDN)
+../deploy/            nginx.conf + README.md (hosting sendiri/PDN)
 ../.github/           ci.yml, dependabot.yml
 ```
 
@@ -119,12 +119,12 @@ Hasil build adalah berkas statis (`dist/`). Persyaratan hosting:
 | **Cloudflare Pages** (rekomendasi) | `public/_headers` terbaca otomatis. SPA fallback bawaan **selama tidak ada `404.html` di root** (jangan menambahkannya, dan tidak perlu `_redirects`). Build: `npm run build`, output: `dist`. |
 | **Netlify**                        | `_headers` terbaca otomatis; tambahkan `public/_redirects` berisi `/* /index.html 200`.                                                                                                        |
 | **Vercel**                         | Terjemahkan isi `_headers` ke `vercel.json` (`headers`) dan tambahkan `rewrites` ke `/index.html`.                                                                                             |
-| **Server sendiri / PDN**           | Lihat `../deploy/nginx.conf.example` (belum diuji di server nyata).                                                                                                                            |
+| **Server sendiri / PDN**           | Lihat `../deploy/README.md` dan `../deploy/nginx.conf` (diuji di lokal, belum di server nyata).                                                                                                |
 
 Catatan:
 
 - `_headers` **tidak berlaku untuk respons fungsi serverless** (mis. `/api/*` di Cloudflare Pages Functions); pasang header di kode fungsi.
-- CSP mengizinkan satu `<style>` inline milik `@idds/react` (animasi `Skeleton`) lewat hash. Setelah upgrade `@idds/react`, bila konsol melaporkan pelanggaran `style-src`, perbarui hash di `public/_headers` (dan `../deploy/nginx.conf.example`) sesuai pesan di konsol. Animasinya tetap jalan karena `@keyframes shimmer` juga ada di `src/index.css`.
+- CSP mengizinkan satu `<style>` inline milik `@idds/react` (animasi `Skeleton`) lewat hash. Setelah upgrade `@idds/react`, bila konsol melaporkan pelanggaran `style-src`, perbarui hash di `public/_headers` (dan `../deploy/nginx.conf`) sesuai pesan di konsol. Animasinya tetap jalan karena `@keyframes shimmer` juga ada di `src/index.css`.
 - Pastikan HTTPS aktif sebelum mengandalkan HSTS.
 
 ## SEO dan pratinjau tautan

@@ -117,7 +117,7 @@ describe('Content-Security-Policy', () => {
   it('hash style IDDS (Skeleton) cocok dengan isi style di @idds/react terpasang', () => {
     // @idds/react menyisipkan <style id="skeleton-shimmer-keyframes"> saat runtime. Bila isinya
     // berubah setelah upgrade, hash di _headers usang dan CSP memblokirnya (konsol: pelanggaran
-    // style-src). Perbarui hash di public/_headers dan deploy/nginx.conf.example.
+    // style-src). Perbarui hash di public/_headers dan deploy/nginx.conf.
     const bundle = read('node_modules/@idds/react/dist/index.es.js');
     const match = /"skeleton-shimmer-keyframes",\s*\w+\s*=\s*`([^`]*)`/.exec(bundle);
     expect(
@@ -136,8 +136,8 @@ describe('Content-Security-Policy', () => {
   });
 });
 
-describe('deploy/nginx.conf.example', () => {
-  const nginx = read('../deploy/nginx.conf.example');
+describe('deploy/nginx.conf', () => {
+  const nginx = read('../deploy/nginx.conf');
 
   it('memakai CSP yang persis sama dengan public/_headers (hindari drift)', () => {
     const nginxCsp = /add_header Content-Security-Policy "([^"]+)"/.exec(nginx)?.[1];
@@ -151,8 +151,34 @@ describe('deploy/nginx.conf.example', () => {
     }
   });
 
-  it('menyembunyikan _headers dan memakai fallback SPA', () => {
+  it('menyembunyikan _headers dan berkas tersembunyi, dan memakai fallback SPA', () => {
     expect(nginx).toMatch(/location = \/_headers\s*\{\s*return 404;/);
+    expect(nginx).toMatch(/location ~ \/\\\.\(\?!well-known\/\)\s*\{\s*return 404;/);
     expect(nginx).toContain('try_files $uri /index.html;');
+  });
+
+  it('meneruskan /api, /sitemap.xml, dan /portfolio/{slug} ke Laravel', () => {
+    for (const location of ['^~ /api/', '= /sitemap.xml', '~ ^/portfolio/[a-z0-9-]+/?$']) {
+      expect(nginx, location).toMatch(
+        new RegExp(
+          `location ${location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{\\s*try_files /tidak-ada @laravel;`,
+        ),
+      );
+    }
+  });
+
+  it('hanya menjalankan public/index.php dan melayani /storage sebagai berkas statis', () => {
+    const laravel = /location @laravel \{([^}]+)\}/.exec(nginx)?.[1] ?? '';
+    expect(laravel).toContain(
+      'fastcgi_param SCRIPT_FILENAME /var/www/pemdi/backend/public/index.php;',
+    );
+    const storage = /location \^~ \/storage\/ \{([^}]+)\}/.exec(nginx)?.[1] ?? '';
+    expect(storage).toContain('alias ');
+    expect(storage).not.toContain('fastcgi');
+    expect(nginx).not.toMatch(/location ~[^{]*\\\.php/);
+  });
+
+  it('membatasi ukuran body request', () => {
+    expect(nginx).toMatch(/client_max_body_size 8m;/);
   });
 });

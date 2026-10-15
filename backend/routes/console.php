@@ -14,3 +14,6 @@ Artisan::command('inspire', function () {
 // dan pemdi.activity_retention_months). Butuh cron di server:
 // `* * * * * cd /path/backend && php artisan schedule:run >> /dev/null 2>&1`.
 Schedule::command('model:prune', ['--model' => [ContactMessage::class, ActivityLog::class]])->daily();
+
+// Hapus gambar unggahan yang tidak dipakai artikel mana pun (config pemdi.media_orphan_days).
+Schedule::command('pemdi:bersihkan-media')->daily();
