@@ -105,3 +105,167 @@
   outline-offset: 2px;
   border-radius: 0.25rem;
 }
+
+/*
+ * Editor WYSIWYG (TipTap/ProseMirror). TipTap biasanya menyisipkan CSS ini lewat <style> runtime
+ * yang diblokir CSP ketat, jadi injectCSS dimatikan (src/admin/editor/RichTextEditor.tsx) dan
+ * aturan yang dibutuhkan ditulis di sini.
+ */
+.ProseMirror {
+  position: relative;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  white-space: break-spaces;
+  font-variant-ligatures: none;
+}
+
+.ProseMirror [contenteditable='false'] {
+  white-space: normal;
+}
+
+img.ProseMirror-separator {
+  display: inline !important;
+  border: none !important;
+  margin: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.ProseMirror-gapcursor {
+  display: none;
+  pointer-events: none;
+  position: absolute;
+}
+
+.ProseMirror-focused .ProseMirror-gapcursor {
+  display: block;
+}
+
+.ProseMirror-hideselection *::selection {
+  background: transparent;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--color-content-secondary);
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 3px solid var(--color-guide-500);
+  outline-offset: 2px;
+}
+
+/*
+ * Tipografi isi artikel (editor admin dan, mulai Fase 3, halaman detail publik). Hanya elemen yang
+ * diizinkan penyaring backend: p, h2, h3, strong, em, u, s, ul, ol, li, blockquote, hr, a, img.
+ */
+.article-body {
+  color: var(--color-content-primary);
+  font-size: var(--text-body-sm);
+  line-height: 1.75rem;
+}
+
+.article-body > * + * {
+  margin-top: 1rem;
+}
+
+.article-body h2 {
+  margin-top: 2rem;
+  font-size: var(--text-h5);
+  line-height: var(--text-h5--line-height);
+  font-weight: 600;
+}
+
+.article-body h3 {
+  margin-top: 1.5rem;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+}
+
+.article-body ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+}
+
+.article-body ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+}
+
+.article-body li + li {
+  margin-top: 0.25rem;
+}
+
+.article-body li > p {
+  margin: 0;
+}
+
+.article-body blockquote {
+  border-left: 4px solid var(--color-primary-500);
+  padding-left: 1rem;
+  color: var(--color-content-secondary);
+  font-style: italic;
+}
+
+.article-body a {
+  color: var(--color-primary-600);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  /* Area sentuh ≥ 24px (WCAG 2.5.8) untuk tautan yang berdiri sendiri satu paragraf, yang tidak
+     termasuk pengecualian "tautan di dalam kalimat". Padding vertikal elemen inline memperbesar
+     area klik tanpa mengubah tinggi baris. */
+  padding-block: 0.25rem;
+}
+
+.article-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+.article-body hr {
+  border: 0;
+  border-top: 1px solid var(--color-stroke-primary);
+  margin: 2rem 0;
+}
+
+/* Tombol aksi yang menghapus/membatalkan (dialog konfirmasi admin). */
+.ina-button.admin-button-destructive:not(:disabled) {
+  background-color: var(--color-negative-600);
+  border-color: var(--color-negative-600);
+}
+
+.ina-button.admin-button-destructive:hover:not(:disabled),
+.ina-button.admin-button-destructive:focus:not(:disabled) {
+  background-color: var(--color-negative-700);
+}
+
+/* <select> bawaan bergaya kolom input IDDS (dipakai untuk pilihan tunggal sederhana di admin). */
+.admin-select {
+  width: 100%;
+  min-height: 2.75rem;
+  appearance: none;
+  border: 1px solid var(--color-stroke-primary);
+  border-radius: 0.5rem;
+  background-color: var(--color-background-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23525252' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6l6 -6'/%3E%3C/svg%3E");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+  color: var(--color-content-primary);
+  font-size: var(--text-body-sm);
+}
+
+.admin-select:disabled {
+  cursor: not-allowed;
+  background-color: var(--color-background-secondary);
+  color: var(--color-content-secondary);
+}
+
+.admin-select[aria-invalid='true'] {
+  border-color: var(--color-negative-600);
+}

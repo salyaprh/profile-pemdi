@@ -10,6 +10,7 @@ Situs profil PEMDI / PANRB (Pemerintah Digital) yang menampilkan karya dan inisi
 - Font Inter di-self-host lewat `@fontsource/inter` (tanpa Google Fonts)
 - Router kecil buatan sendiri berbasis History API (`src/lib/router.tsx`), tanpa dependency tambahan
 - Panel admin CMS (`src/admin/`): dimuat terpisah dengan `React.lazy`, data dari API memakai TanStack Query
+- Editor WYSIWYG [TipTap 3](https://tiptap.dev/) (MIT), hanya di bundle admin
 
 ## Menjalankan
 
@@ -32,10 +33,10 @@ Panel admin (`/admin`) butuh backend berjalan: lihat [README backend](../backend
 
 ## Pengujian
 
-| Lapisan         | Alat                                    | Cakupan                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| --------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit & komponen | Vitest + Testing Library + jsdom + MSW  | Logika (validator, data, router, SEO), komponen dan halaman dengan komponen IDDS asli (tidak di-mock), klien API (CSRF, 419, 422, galat jaringan) dan panel admin terhadap API tiruan MSW, serta invarian keamanan: CSP di `public/_headers` tanpa `unsafe-inline`/host eksternal, hash style IDDS dihitung dari paket terpasang, dan CSP Nginx identik dengan `_headers`                                                                                                                                                 |
-| End-to-end      | Playwright (Chromium, desktop + mobile) | Build produksi dilayani dengan header dari `_headers`, dan `/api` diteruskan ke backend Laravel sungguhan dengan database SQLite sementara (`e2e/start-backend.mjs`). Setiap uji otomatis gagal bila ada error konsol, pelanggaran CSP, atau permintaan ke origin lain. Mencakup routing, pencarian, formulir (sukses, 500, jaringan putus, klik ganda), login/logout dan sesi admin (cookie HttpOnly, CSRF 419), layout, SEO, keamanan, dan audit aksesibilitas axe WCAG 2.2 AA pada semua halaman dan status interaktif |
+| Lapisan         | Alat                                    | Cakupan                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Unit & komponen | Vitest + Testing Library + jsdom + MSW  | Logika (validator, data, router, SEO), komponen dan halaman dengan komponen IDDS asli (tidak di-mock), klien API (CSRF, 419, 422, galat jaringan) dan panel admin terhadap API tiruan MSW, serta invarian keamanan: CSP di `public/_headers` tanpa `unsafe-inline`/host eksternal, hash style IDDS dihitung dari paket terpasang, dan CSP Nginx identik dengan `_headers`                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| End-to-end      | Playwright (Chromium, desktop + mobile) | Build produksi dilayani dengan header dari `_headers`, dan `/api` diteruskan ke backend Laravel sungguhan dengan database SQLite sementara (`e2e/start-backend.mjs`). Setiap uji otomatis gagal bila ada error konsol, pelanggaran CSP, atau permintaan ke origin lain. Mencakup routing, pencarian, formulir (sukses, 500, jaringan putus, klik ganda), login/logout dan sesi admin (cookie HttpOnly, CSRF 419), alur artikel lengkap (Penulis menulis dengan editor, tautan, dan gambar unggahan lalu mengajukan; Admin mengembalikan dengan catatan lalu menerbitkan; HTML tersimpan diperiksa hasil penyaring server), konfirmasi perubahan belum disimpan, toolbar editor dengan keyboard, CRUD kategori dan penolakan 403 untuk Penulis, layout, SEO, keamanan, dan audit aksesibilitas axe WCAG 2.2 AA pada semua halaman dan status interaktif |
 
 Uji ditulis agar dapat gagal: kualitasnya diperiksa dengan uji mutasi manual (menyisipkan bug yang masuk akal, lalu memastikan uji menangkapnya).
 
@@ -45,15 +46,18 @@ CI (`../.github/workflows/ci.yml`) menjalankan dua job frontend pada setiap PR: 
 
 ## Rute
 
-| Path             | Halaman                                                                                      |
-| ---------------- | -------------------------------------------------------------------------------------------- |
-| `/`              | Beranda                                                                                      |
-| `/portfolio`     | Daftar portofolio. Filter dan halaman tersimpan di URL: `?kategori=Layanan+Publik&halaman=2` |
-| `/portfolio/:id` | Detail artikel + artikel terkait                                                             |
-| `/contact`       | Formulir "Hubungi kami"                                                                      |
-| `/admin/masuk`   | Halaman Masuk CMS (`noindex`)                                                                |
-| `/admin`         | Dasbor CMS (perlu login; tamu diarahkan ke halaman Masuk dengan `?kembali=`)                 |
-| lainnya          | Halaman 404 (`noindex`)                                                                      |
+| Path                                        | Halaman                                                                                      |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `/`                                         | Beranda                                                                                      |
+| `/portfolio`                                | Daftar portofolio. Filter dan halaman tersimpan di URL: `?kategori=Layanan+Publik&halaman=2` |
+| `/portfolio/:id`                            | Detail artikel + artikel terkait                                                             |
+| `/contact`                                  | Formulir "Hubungi kami"                                                                      |
+| `/admin/masuk`                              | Halaman Masuk CMS (`noindex`)                                                                |
+| `/admin`                                    | Dasbor CMS (perlu login; tamu diarahkan ke halaman Masuk dengan `?kembali=`)                 |
+| `/admin/artikel`                            | Daftar artikel. Filter di URL: `?status=ditinjau&kategori=1&cari=spbe&halaman=2`             |
+| `/admin/artikel/baru`, `/admin/artikel/:id` | Tulis/edit artikel (editor WYSIWYG, gambar sampul, tombol alur tinjauan)                     |
+| `/admin/kategori`                           | Kelola kategori (khusus Admin; Penulis melihat pemberitahuan "khusus Admin")                 |
+| lainnya                                     | Halaman 404 (`noindex`)                                                                      |
 
 ## Struktur
 
@@ -67,8 +71,12 @@ src/
   data/               articlesData.ts (data dummy + helper), siteContent.ts (menu, footer, statistik)
   lib/                router.tsx, seo.ts (title/meta per halaman), validators.ts, format.ts
   services/           api.ts (klien API: sesi cookie + CSRF, pesan galat), contact.ts (pengiriman formulir)
-  admin/              panel CMS: AdminApp (rute admin), AdminLayout (sidebar), RequireAuth, auth (sesi),
-                      navigation (menu per peran), pages/ (Masuk, Dasbor, 404 admin)
+  admin/              panel CMS: AdminApp (rute admin + penjaga peran), AdminLayout (sidebar), RequireAuth,
+                      auth (sesi), navigation (menu per peran), useUnsavedChangesGuard,
+                      pages/ (Masuk, Dasbor, Artikel, Editor artikel, Kategori, 403/404 admin),
+                      articles/ (tipe + hook TanStack Query + unggah gambar), editor/ (RichTextEditor,
+                      EditorToolbar, LinkDialog, ImageDialog, links.ts), components/ (ConfirmDialog,
+                      FilterChips, ImageFileInput, CoverImageField, StatusBadge, useDialogInitialFocus)
   test/               setup Vitest, server.ts (MSW), utils.tsx
 vite-plugins/         selfHostFonts.ts (buang @import Google Fonts dari CSS IDDS), seo.ts (robots.txt + sitemap.xml)
 public/               panrb.svg, images/articles/*, _headers (header keamanan + cache)
@@ -136,21 +144,31 @@ Seluruh tampilan mengacu ke IDDS. Gunakan token, bukan warna hex langsung:
 
 Beberapa komponen IDDS (`@idds/react` 1.6.x) tidak lolos WCAG 2.2 AA yang diacu IDDS sendiri, sehingga ditangani di sisi kita. **Periksa lagi setelah upgrade `@idds/react`; sebaiknya dilaporkan ke tim IDDS (ux@inadigital.co.id).**
 
-| Komponen IDDS            | Masalah                                                                                                                  | Penanganan                                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `BasicDropdown`          | `<div role="button">` membungkus input dan tombol hapus (`nested-interactive`)                                           | `SearchBar` membuat panel hasil sendiri                                                            |
-| `Pagination`             | tombol ikon tanpa nama (`button-name`), `<select>` tanpa nama (`select-name`), dan halaman lanjutan tidak dapat dirayapi | `PaginationNav`: tautan sungguhan, bergaya token IDDS                                              |
-| `Accordion`              | konten tertutup hanya di-clip sehingga tautannya tetap dapat difokus lewat Tab (WCAG 2.4.7)                              | CSS di `src/index.css` (`visibility: hidden` dengan jeda animasi)                                  |
-| `TextField` / `TextArea` | teks error `#f02d2d` di atas putih = 4,1:1 (butuh 4,5:1)                                                                 | override ke `negative-600` di `src/index.css`                                                      |
-| `Button` (primer)        | warna hover lebih terang sehingga 4,3-4,4:1 dengan teks putih                                                            | hover/fokus digelapkan (`primary-600`) di `src/index.css`                                          |
-| `TextField`              | `id="undefined"` bila tanpa `id`/`name`/label; input 21px dan tombol hapus kurang dari 24px (WCAG 2.5.8)                 | selalu beri `id`; `min-height`/`min-width` 24px di `src/index.css`                                 |
-| `PhoneInput`             | daftar negara berperan sebagai input ARIA tanpa nama (`aria-input-field-name`)                                           | **belum dapat diperbaiki** (tidak ada prop); hanya selector itu dikecualikan di `e2e/a11y.spec.ts` |
-| `PasswordInput`          | teks error `#f02d2d` di atas putih = 4,1:1 (butuh 4,5:1)                                                                 | override ke `negative-600` di `src/index.css`                                                      |
-| `Badge` (soft, brand)    | teks primary di atas primary-100 = 3,56:1 pada 12px                                                                      | override ke `primary-700` (8,1:1) di `src/index.css`                                               |
-| `Drawer`                 | di layar <= 640px menjadi bottom sheet; tanpa `role="dialog"`, dan fokus keyboard tidak masuk ke panel                   | menu mobile admin memakai panel lipat sendiri (`src/admin/AdminLayout.tsx`), seperti header publik |
-| `Alert`                  | sudah ber-`role="alert"`: jangan dibungkus elemen ber-role sama (dibacakan dua kali)                                     | dipakai apa adanya                                                                                 |
+| Komponen IDDS            | Masalah                                                                                                                     | Penanganan                                                                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `BasicDropdown`          | `<div role="button">` membungkus input dan tombol hapus (`nested-interactive`)                                              | `SearchBar` membuat panel hasil sendiri                                                                        |
+| `Pagination`             | tombol ikon tanpa nama (`button-name`), `<select>` tanpa nama (`select-name`), dan halaman lanjutan tidak dapat dirayapi    | `PaginationNav`: tautan sungguhan, bergaya token IDDS                                                          |
+| `Accordion`              | konten tertutup hanya di-clip sehingga tautannya tetap dapat difokus lewat Tab (WCAG 2.4.7)                                 | CSS di `src/index.css` (`visibility: hidden` dengan jeda animasi)                                              |
+| `TextField` / `TextArea` | teks error `#f02d2d` di atas putih = 4,1:1 (butuh 4,5:1)                                                                    | override ke `negative-600` di `src/index.css`                                                                  |
+| `Button` (primer)        | warna hover lebih terang sehingga 4,3-4,4:1 dengan teks putih                                                               | hover/fokus digelapkan (`primary-600`) di `src/index.css`                                                      |
+| `TextField`              | `id="undefined"` bila tanpa `id`/`name`/label; input 21px dan tombol hapus kurang dari 24px (WCAG 2.5.8)                    | selalu beri `id`; `min-height`/`min-width` 24px di `src/index.css`                                             |
+| `PhoneInput`             | daftar negara berperan sebagai input ARIA tanpa nama (`aria-input-field-name`)                                              | **belum dapat diperbaiki** (tidak ada prop); hanya selector itu dikecualikan di `e2e/a11y.spec.ts`             |
+| `PasswordInput`          | teks error `#f02d2d` di atas putih = 4,1:1 (butuh 4,5:1)                                                                    | override ke `negative-600` di `src/index.css`                                                                  |
+| `Badge` (soft, brand)    | teks primary di atas primary-100 = 3,56:1 pada 12px                                                                         | override ke `primary-700` (8,1:1) di `src/index.css`                                                           |
+| `Drawer`                 | di layar <= 640px menjadi bottom sheet; tanpa `role="dialog"`, dan fokus keyboard tidak masuk ke panel                      | menu mobile admin memakai panel lipat sendiri (`src/admin/AdminLayout.tsx`), seperti header publik             |
+| `Alert`                  | sudah ber-`role="alert"`: jangan dibungkus elemen ber-role sama (dibacakan dua kali)                                        | dipakai apa adanya                                                                                             |
+| `Modal`                  | memfokuskan wadah dialog sekitar 85 ms setelah dibuka, sehingga `autoFocus` di dalamnya tertimpa dan ketikan awal terpotong | `useDialogInitialFocus` memindahkan fokus ke isian pertama (atau "Batal" pada konfirmasi hapus) setelah 150 ms |
+| `Chip`                   | chip yang aktif tidak diberi `aria-pressed`, jadi pembaca layar tidak tahu filter mana yang dipilih (WCAG 4.1.2)            | `FilterChips`: tombol toggle sendiri dengan kelas CSS `ina-chip` dan `aria-pressed`                            |
+| `SingleFileUpload`       | pratinjau memakai URL `blob:` yang diblokir CSP `img-src 'self'`                                                            | `ImageFileInput`: `<input type="file">` asli; pratinjau memakai URL hasil unggahan di server                   |
 
 Catatan: `Card` IDDS sudah membungkus `title` dalam `<h3>` dan `description` dalam `<p>`, jadi isi keduanya dengan `<span>`.
+
+### Editor artikel
+
+- Toolbar mengikuti pola [WAI-ARIA Toolbar](https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/): satu tab stop, panah kiri/kanan dan Home/End berpindah antar tombol, `aria-pressed` untuk format, dan tombol yang belum tersedia memakai `aria-disabled` (bukan `disabled`) agar tetap bisa difokus.
+- Elemen yang bisa dibuat editor sama persis dengan yang diizinkan penyaring backend (`ArticleHtmlSanitizer`); HTML yang tersimpan selalu hasil saringan server.
+- CSP melarang `<style>` sisipan, jadi TipTap dijalankan dengan `injectCSS: false` dan CSS ProseMirror yang dibutuhkan ada di `src/index.css`. Tipografi isi artikel memakai kelas `.article-body` (dipakai juga untuk halaman publik di Fase 3).
+- Gambar wajib diberi teks alternatif. Tautan hanya `https://`, `mailto:`, atau path situs ini.
 
 ## Aset
 

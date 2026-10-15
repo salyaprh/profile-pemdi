@@ -17,7 +17,7 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isGuest) return;
     const returnTo = encodeURIComponent(pathname + search);
-    navigate(`${paths.adminLogin}?kembali=${returnTo}`, { replace: true });
+    navigate(`${paths.adminLogin}?kembali=${returnTo}`, { replace: true, force: true });
   }, [isGuest, pathname, search]);
 
   if (isPending) return <AdminLoadingScreen />;

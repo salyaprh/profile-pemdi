@@ -4,12 +4,12 @@ Situs profil PEMDI / PANRB beserta CMS (sistem pengelolaan konten) agar staf dap
 
 ## Struktur
 
-| Folder                   | Isi                                                                                                                        |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| [`frontend/`](frontend/) | Situs publik (React 19 + TypeScript + Vite + IDDS) dan nanti panel admin CMS. Lihat [README frontend](frontend/README.md). |
-| [`backend/`](backend/)   | API CMS (Laravel 13, PHP 8.3+): login, pengelolaan konten, formulir kontak. Lihat [README backend](backend/README.md).     |
-| [`deploy/`](deploy/)     | Contoh konfigurasi server (Nginx).                                                                                         |
-| [`.github/`](.github/)   | CI (frontend, backend PHP 8.3 dan 8.5, e2e) dan Dependabot.                                                                |
+| Folder                   | Isi                                                                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| [`frontend/`](frontend/) | Situs publik (React 19 + TypeScript + Vite + IDDS) dan panel admin CMS. Lihat [README frontend](frontend/README.md).   |
+| [`backend/`](backend/)   | API CMS (Laravel 13, PHP 8.3+): login, pengelolaan konten, formulir kontak. Lihat [README backend](backend/README.md). |
+| [`deploy/`](deploy/)     | Contoh konfigurasi server (Nginx).                                                                                     |
+| [`.github/`](.github/)   | CI (frontend, backend PHP 8.3 dan 8.5, e2e) dan Dependabot.                                                            |
 
 Di produksi, frontend dan backend disajikan dari **satu origin** lewat Nginx: berkas statis frontend untuk halaman, dan Laravel (PHP-FPM) untuk `/api`. Dengan begitu login memakai cookie sesi + CSRF tanpa CORS, dan CSP `connect-src 'self'` tetap ketat.
 
@@ -25,7 +25,7 @@ cd backend && composer setup && php artisan db:seed && composer dev   # API di h
 cd frontend && npm install && npm run dev                             # situs di http://localhost:5173
 ```
 
-Panel admin ada di `http://localhost:5173/admin`. Akun demo lokal dijelaskan di [README backend](backend/README.md#menjalankan).
+Panel admin ada di `http://localhost:5173/admin`. Akun demo lokal dijelaskan di [README backend](backend/README.md#menjalankan). Masuk sebagai Penulis untuk menulis dan mengajukan artikel, lalu sebagai Admin untuk meninjau dan menerbitkannya.
 
 ## Rencana CMS
 
@@ -35,7 +35,7 @@ Dikerjakan bertahap, satu PR per fase:
 | ---- | ------------------------------------------------------------------------------------------------------------ | ---------- |
 | 0    | Monorepo `frontend/` + `backend/`, kerangka Laravel, CI backend                                              | Selesai    |
 | 1    | Database, login (sesi cookie + CSRF), peran Admin dan Penulis, log aktivitas, halaman Masuk dan dasbor admin | Selesai    |
-| 2    | CRUD artikel dan kategori dengan editor WYSIWYG (TipTap), unggah gambar, alur tinjauan                       | Berikutnya |
-| 3    | Situs publik membaca konten dari database; formulir kontak tersimpan di kotak masuk admin                    |            |
+| 2    | CRUD artikel dan kategori dengan editor WYSIWYG (TipTap), unggah gambar, alur tinjauan                       | Selesai    |
+| 3    | Situs publik membaca konten dari database; formulir kontak tersimpan di kotak masuk admin                    | Berikutnya |
 | 4    | Pengelolaan pengguna, pengaturan situs, halaman log aktivitas                                                |            |
 | 5    | Siap dipasang di server PANRB: Nginx, header keamanan, pratinjau tautan, panduan deploy                      |            |

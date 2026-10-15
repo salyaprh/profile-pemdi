@@ -1,4 +1,4 @@
-import { accounts, demoPassword, fillLogin, loginAs } from './admin.helper';
+import { accounts, demoPassword, fillLogin, loginAs, uniqueSuffix } from './admin.helper';
 import { expect, test } from './fixtures';
 
 // Uji panel admin terhadap backend Laravel sungguhan (lihat e2e/start-backend.mjs): sesi cookie,
@@ -20,7 +20,8 @@ test('kredensial salah ditolak dengan pesan yang sama untuk email apa pun', asyn
   problems.allowConsoleErrors.push(/status of 422/);
   await page.goto('/admin/masuk');
 
-  await fillLogin(page, 'tidak-terdaftar@pemdi.test', 'BukanKataSandi123');
+  // Email unik per uji: batas percobaan login dihitung per email, dan uji ini bisa diulang.
+  await fillLogin(page, `tidak-terdaftar-${uniqueSuffix()}@pemdi.test`, 'BukanKataSandi123');
 
   await expect(page.getByRole('alert')).toHaveText('Email atau kata sandi salah.');
   await expect(page).toHaveURL('/admin/masuk');
@@ -29,8 +30,14 @@ test('kredensial salah ditolak dengan pesan yang sama untuk email apa pun', asyn
 test('Admin masuk, melihat dasbor dari database, lalu keluar', async ({ page }) => {
   await loginAs(page, 'admin');
 
-  const metrics = page.getByRole('region', { name: 'Ringkasan artikel' });
-  await expect(metrics.getByText('36')).toBeVisible();
+  // Angka "Terbit" berasal dari database: 36 artikel placeholder, ditambah artikel yang mungkin
+  // diterbitkan uji lain yang berjalan paralel (articles.spec.ts).
+  const published = page
+    .getByRole('region', { name: 'Ringkasan artikel' })
+    .getByRole('definition')
+    .first();
+  await expect(published).toHaveText(/^\d+$/);
+  expect(Number(await published.textContent())).toBeGreaterThanOrEqual(36);
   await expect(page.getByRole('region', { name: 'Aktivitas terbaru' })).toContainText(
     'Masuk ke CMS.',
   );
