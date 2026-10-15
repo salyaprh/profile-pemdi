@@ -1,9 +1,10 @@
 import { http, HttpResponse } from 'msw';
 import type {
   ArticleSummary,
+  CategoryRef,
   PublicArticle,
   PublicCategory,
-  CategoryRef,
+  SiteSettings,
 } from '../services/content';
 
 /**
@@ -68,7 +69,25 @@ export function toSummary({
   return { slug, title, excerpt, cover_url, published_at, category, author };
 }
 
+export const testSite: SiteSettings = {
+  description: 'Deskripsi situs uji dari pengaturan.',
+  hero_stats: [
+    { value: '12+', label: 'Inisiatif transformasi' },
+    { value: '28', label: 'Layanan terdigitalisasi' },
+    { value: '100%', label: 'Berorientasi dampak' },
+  ],
+  contact: { email: 'humas@panrb.example.go.id', phone: '(021) 555-1234', address: 'Jakarta' },
+  social: {
+    facebook: null,
+    instagram: 'https://www.instagram.com/panrb',
+    x: null,
+    youtube: 'https://www.youtube.com/@panrb',
+  },
+};
+
 export const publicHandlers = [
+  http.get('/api/site', () => HttpResponse.json({ data: testSite })),
+
   http.get('/api/categories', () =>
     HttpResponse.json({
       data: testCategories.map((category): PublicCategory => ({

@@ -39,7 +39,7 @@ class CreateAdminCommandTest extends TestCase
     public function test_rejects_a_weak_password(): void
     {
         $this->runCommand('Admin Utama', 'admin@panrb.go.id', 'pendek')
-            ->expectsOutput('Kata sandi minimal 12 karakter.')
+            ->expectsOutput('Kata sandi minimal 12 karakter')
             ->assertFailed();
 
         $this->assertSame(0, User::count());
@@ -48,8 +48,8 @@ class CreateAdminCommandTest extends TestCase
     public function test_rejects_a_password_without_mixed_case_and_numbers(): void
     {
         $this->runCommand('Admin Utama', 'admin@panrb.go.id', 'katasandipanjangsekali')
-            ->expectsOutput('Kata sandi harus memuat huruf besar dan huruf kecil.')
-            ->expectsOutput('Kata sandi harus memuat angka.')
+            ->expectsOutput('Kata sandi harus memuat huruf besar dan huruf kecil')
+            ->expectsOutput('Kata sandi harus memuat angka')
             ->assertFailed();
     }
 

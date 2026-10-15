@@ -15,6 +15,20 @@ return [
     'media_directory' => env('MEDIA_DIRECTORY', 'media'),
 
     /*
+    | Reverse proxy/CDN yang dipercaya untuk membaca IP pengunjung dari X-Forwarded-For: alamat
+    | dipisah koma, atau * bila hanya proxy yang dapat menjangkau server. Kosong = tidak ada (Nginx +
+    | PHP-FPM langsung). Tanpa ini semua pengunjung di balik proxy tampak berasal dari satu IP, sehingga
+    | batas laju login, formulir kontak, dan API publik berlaku untuk SELURUH situs sekaligus.
+    */
+    'trusted_proxies' => array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', ''))))),
+
+    /*
+    | Masa simpan log aktivitas (bulan). Memuat alamat IP, jadi tidak disimpan selamanya; dihapus
+    | `model:prune` yang dijadwalkan harian (routes/console.php).
+    */
+    'activity_retention_months' => (int) env('ACTIVITY_RETENTION_MONTHS', 24),
+
+    /*
     | Batas permintaan API situs publik per IP per menit (artikel, kategori, sitemap).
     */
     'public_rate_limit' => (int) env('PUBLIC_API_RATE_LIMIT', 120),

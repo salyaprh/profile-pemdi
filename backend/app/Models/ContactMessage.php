@@ -44,9 +44,4 @@ class ContactMessage extends Model
             now()->subMonths((int) config('pemdi.contact.retention_months')),
         );
     }
-
-    public function isRead(): bool
-    {
-        return $this->read_at !== null;
-    }
 }

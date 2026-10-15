@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Button, TextField } from '@idds/react';
+import { Button, TextField } from '@idds/react';
 import { IconArticle, IconPlus, IconSearch } from '@tabler/icons-react';
 import ButtonLink from '../../components/ButtonLink';
 import EmptyState from '../../components/EmptyState';
@@ -12,6 +12,9 @@ import { useArticles, useCategories } from '../articles/api';
 import type { ArticleListFilters, ArticleStatusFilter } from '../articles/types';
 import { useAuthenticatedUser } from '../auth';
 import StatusBadge from '../components/StatusBadge';
+import LoadError from '../components/LoadError';
+import { DataTable, HeaderCell } from '../components/Table';
+import SelectField from '../components/SelectField';
 
 const statusOptions: {
   label: string;
@@ -39,7 +42,7 @@ function readFilters(searchParams: URLSearchParams): ArticleListFilters {
   };
 }
 
-export function listUrl({ status, kategori, cari, halaman }: ArticleListFilters): string {
+function listUrl({ status, kategori, cari, halaman }: ArticleListFilters): string {
   const params = new URLSearchParams();
   if (status) params.set('status', status);
   if (kategori) params.set('kategori', String(kategori));
@@ -113,29 +116,16 @@ export default function ArticleListPage() {
             inputMode="search"
             autoComplete="off"
           />
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="artikel-kategori"
-              className="text-caption font-medium text-content-primary"
-            >
-              Kategori
-            </label>
-            <select
-              id="artikel-kategori"
-              value={filters.kategori ?? ''}
-              onChange={(event) =>
-                applyFilters({ kategori: event.target.value ? Number(event.target.value) : null })
-              }
-              className="admin-select"
-            >
-              <option value="">Semua kategori</option>
-              {categories.data?.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SelectField
+            label="Kategori"
+            value={filters.kategori ? String(filters.kategori) : ''}
+            onValueChange={(value) => applyFilters({ kategori: value ? Number(value) : null })}
+            options={(categories.data ?? []).map(({ id, name }) => ({
+              value: String(id),
+              label: name,
+            }))}
+            placeholder="Semua kategori"
+          />
         </div>
       </div>
 
@@ -144,16 +134,11 @@ export default function ArticleListPage() {
       </p>
 
       {articles.isError ? (
-        <div className="space-y-3">
-          <Alert
-            variant="critical"
-            title="Daftar artikel gagal dimuat"
-            message={articles.error.message}
-          />
-          <Button hierarchy="secondary" onClick={() => void articles.refetch()}>
-            Coba lagi
-          </Button>
-        </div>
+        <LoadError
+          title="Daftar artikel gagal dimuat"
+          message={articles.error.message}
+          onRetry={() => void articles.refetch()}
+        />
       ) : articles.data && articles.data.data.length === 0 ? (
         <EmptyState
           icon={<IconArticle size={32} aria-hidden="true" />}
@@ -182,72 +167,50 @@ export default function ArticleListPage() {
       ) : (
         articles.data && (
           <>
-            <div
-              role="region"
-              aria-label="Tabel artikel"
-              // Wilayah yang bisa digulir ke samping (layar sempit) harus dapat difokus agar bisa
-              // digulir dengan keyboard (WCAG 2.1.1; axe: scrollable-region-focusable).
-              // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-              tabIndex={0}
-              className="overflow-x-auto rounded-xl border border-stroke-primary bg-background-primary"
+            <DataTable
+              label="Tabel artikel"
+              head={
+                <tr>
+                  <HeaderCell>Judul</HeaderCell>
+                  <HeaderCell>Kategori</HeaderCell>
+                  {isAdmin && <HeaderCell>Penulis</HeaderCell>}
+                  <HeaderCell>Status</HeaderCell>
+                  <HeaderCell>Diperbarui</HeaderCell>
+                </tr>
+              }
             >
-              <table className="w-full min-w-[720px] text-left text-caption">
-                <thead className="border-b border-stroke-primary bg-background-secondary text-content-secondary">
-                  <tr>
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Judul
-                    </th>
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Kategori
-                    </th>
-                    {isAdmin && (
-                      <th scope="col" className="px-4 py-3 font-medium">
-                        Penulis
-                      </th>
+              {articles.data.data.map((article) => (
+                <tr key={article.id} className="align-top hover:bg-background-secondary">
+                  <td className="max-w-md px-4 py-3">
+                    <Link
+                      to={paths.adminArticle(article.id)}
+                      className="font-semibold text-content-primary hover:text-primary-600 hover:underline"
+                    >
+                      {article.title}
+                    </Link>
+                    {article.review_note && article.status === 'draf' && (
+                      <p className="mt-1 text-caption-sm text-content-secondary">
+                        Dikembalikan dengan catatan dari Admin
+                      </p>
                     )}
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Status
-                    </th>
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Diperbarui
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stroke-primary">
-                  {articles.data.data.map((article) => (
-                    <tr key={article.id} className="align-top hover:bg-background-secondary">
-                      <td className="max-w-md px-4 py-3">
-                        <Link
-                          to={paths.adminArticle(article.id)}
-                          className="font-semibold text-content-primary hover:text-primary-600 hover:underline"
-                        >
-                          {article.title}
-                        </Link>
-                        {article.review_note && article.status === 'draf' && (
-                          <p className="mt-1 text-caption-sm text-content-secondary">
-                            Dikembalikan dengan catatan dari Admin
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-content-secondary">{article.category.name}</td>
-                      {isAdmin && (
-                        <td className="px-4 py-3 text-content-secondary">{article.author.name}</td>
-                      )}
-                      <td className="px-4 py-3">
-                        <StatusBadge
-                          status={article.status}
-                          label={article.status_label}
-                          trashed={article.deleted_at !== null}
-                        />
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-content-secondary">
-                        {article.updated_at ? formatDateTime(article.updated_at) : '–'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </td>
+                  <td className="px-4 py-3 text-content-secondary">{article.category.name}</td>
+                  {isAdmin && (
+                    <td className="px-4 py-3 text-content-secondary">{article.author.name}</td>
+                  )}
+                  <td className="px-4 py-3">
+                    <StatusBadge
+                      status={article.status}
+                      label={article.status_label}
+                      trashed={article.deleted_at !== null}
+                    />
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-content-secondary">
+                    {article.updated_at ? formatDateTime(article.updated_at) : '–'}
+                  </td>
+                </tr>
+              ))}
+            </DataTable>
             <PaginationNav
               currentPage={articles.data.meta.current_page}
               totalPages={articles.data.meta.last_page}

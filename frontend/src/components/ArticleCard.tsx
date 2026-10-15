@@ -3,7 +3,7 @@ import { Link, paths } from '../lib/router';
 import type { ArticleSummary } from '../services/content';
 
 /** Dipakai bila artikel belum diberi gambar sampul: logo PANRB di bidang netral. */
-export const FALLBACK_COVER = '/images/articles/sampul-bawaan.svg';
+const FALLBACK_COVER = '/images/articles/sampul-bawaan.svg';
 
 /**
  * Kartu artikel (pola Blog Section IDDS). Dibungkus <Link> agar berupa tautan asli yang dapat
@@ -43,7 +43,7 @@ export default function ArticleCard({ article }: { article: ArticleSummary }) {
 }
 
 /** Kerangka kartu selama daftar artikel dimuat. */
-export function ArticleCardSkeleton() {
+function ArticleCardSkeleton() {
   return (
     <div className="flex h-full flex-col gap-3 rounded-xl border border-stroke-primary p-4">
       <Skeleton width="100%" height="9rem" rounded="md" />

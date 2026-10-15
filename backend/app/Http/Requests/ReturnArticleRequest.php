@@ -13,7 +13,7 @@ class ReturnArticleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'note' => ['required', 'string', 'min:5', 'max:1000'],
+            'note' => ['bail', 'required', 'string', 'min:5', 'max:1000'],
         ];
     }
 

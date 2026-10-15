@@ -1,4 +1,4 @@
-import { Alert, Badge, Button } from '@idds/react';
+import { Badge } from '@idds/react';
 import { IconMail } from '@tabler/icons-react';
 import EmptyState from '../../components/EmptyState';
 import FilterChips from '../../components/FilterChips';
@@ -7,8 +7,9 @@ import { formatDateTime } from '../../lib/format';
 import { Link, navigate, paths, useLocation } from '../../lib/router';
 import { usePageMeta } from '../../lib/seo';
 import { useMessages, type MessageFilter } from '../messages/api';
+import LoadError from '../components/LoadError';
 
-export function messagesUrl(filter: MessageFilter, page = 1): string {
+function messagesUrl(filter: MessageFilter, page = 1): string {
   const params = new URLSearchParams();
   if (filter === 'belum-dibaca') params.set('status', 'belum-dibaca');
   if (page > 1) params.set('halaman', String(page));
@@ -54,12 +55,11 @@ export default function MessagesPage() {
       </p>
 
       {messages.isError ? (
-        <div className="space-y-3">
-          <Alert variant="critical" title="Pesan gagal dimuat" message={messages.error.message} />
-          <Button hierarchy="secondary" onClick={() => void messages.refetch()}>
-            Coba lagi
-          </Button>
-        </div>
+        <LoadError
+          title="Pesan gagal dimuat"
+          message={messages.error.message}
+          onRetry={() => void messages.refetch()}
+        />
       ) : messages.data && messages.data.data.length === 0 ? (
         <EmptyState
           icon={<IconMail size={32} aria-hidden="true" />}

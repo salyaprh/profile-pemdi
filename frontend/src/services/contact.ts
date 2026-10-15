@@ -15,8 +15,9 @@ export interface ContactMessage {
 export const HONEYPOT_FIELD = 'kolom_khusus';
 
 /**
- * Token formulir dari server (waktu formulir dibuka, terenkripsi). Pesan yang dikirim terlalu cepat
- * setelah formulir dibuka diabaikan, dan token yang kedaluwarsa (lebih dari 2 jam) ditolak 422.
+ * Token formulir dari server (waktu formulir dibuka, terenkripsi). Pesan yang dikirim kurang dari 3
+ * detik setelah token diambil, atau dengan token kedaluwarsa (lebih dari 2 jam), ditolak 422 pada kolom
+ * `token`; mengambil token baru lalu mengirim ulang berhasil.
  */
 export async function fetchContactToken(signal?: AbortSignal): Promise<string> {
   const { token } = await apiRequest<{ token: string }>('/api/contact/token', { signal });

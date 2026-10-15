@@ -2,9 +2,9 @@ import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
 /** Standar yang diacu IDDS: WCAG 2.2 level AA. */
-export const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
-export interface AuditOptions {
+interface AuditOptions {
   /** Pemilih elemen yang dikecualikan (hanya untuk masalah di komponen pihak ketiga yang terdokumentasi). */
   exclude?: string[];
   /** ID aturan axe yang dinonaktifkan (wajib disertai alasan di pemanggil). */

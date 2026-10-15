@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ActivityAction;
 use App\Enums\ArticleStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ArticleRequest;
@@ -32,7 +33,12 @@ class ArticleController extends Controller
     {
         Gate::authorize('viewAny', Article::class);
         $user = $request->user();
-        $status = $request->string('status')->value();
+        $filters = $request->validate([
+            'status' => ['nullable', 'string'],
+            'kategori' => ['nullable', 'integer'],
+            'cari' => ['nullable', 'string'],
+        ]);
+        $status = $filters['status'] ?? '';
 
         $query = Article::query()->with(['category', 'author']);
 
@@ -47,11 +53,11 @@ class ArticleController extends Controller
             $query->where('author_id', $user->id);
         }
 
-        if ($request->filled('kategori')) {
-            $query->where('category_id', $request->integer('kategori'));
+        if (isset($filters['kategori'])) {
+            $query->where('category_id', (int) $filters['kategori']);
         }
 
-        $search = trim($request->string('cari')->value());
+        $search = trim($filters['cari'] ?? '');
         if ($search !== '') {
             LikePattern::whereAnyContains($query, ['title'], $search);
         }
@@ -79,7 +85,7 @@ class ArticleController extends Controller
         $article->status = ArticleStatus::Draf;
         $article->save();
 
-        ActivityLog::record('artikel_dibuat', "Membuat artikel \"{$article->title}\".", $article);
+        ActivityLog::record(ActivityAction::ArtikelDibuat, "Membuat artikel \"{$article->title}\".", $article);
 
         return $this->resource($article)->response()->setStatusCode(201);
     }
@@ -98,7 +104,7 @@ class ArticleController extends Controller
         }
         $article->save();
 
-        ActivityLog::record('artikel_diperbarui', "Memperbarui artikel \"{$article->title}\".", $article);
+        ActivityLog::record(ActivityAction::ArtikelDiperbarui, "Memperbarui artikel \"{$article->title}\".", $article);
 
         return $this->resource($article);
     }
@@ -108,7 +114,7 @@ class ArticleController extends Controller
         Gate::authorize('delete', $article);
         $article->delete();
 
-        ActivityLog::record('artikel_dihapus', "Memindahkan artikel \"{$article->title}\" ke sampah.", $article);
+        ActivityLog::record(ActivityAction::ArtikelDihapus, "Memindahkan artikel \"{$article->title}\" ke sampah.", $article);
 
         return response()->noContent();
     }
@@ -119,7 +125,7 @@ class ArticleController extends Controller
         abort_unless($article->trashed(), 409, 'Artikel ini tidak ada di sampah.');
         $article->restore();
 
-        ActivityLog::record('artikel_dipulihkan', "Memulihkan artikel \"{$article->title}\" dari sampah.", $article);
+        ActivityLog::record(ActivityAction::ArtikelDipulihkan, "Memulihkan artikel \"{$article->title}\" dari sampah.", $article);
 
         return $this->resource($article);
     }
@@ -129,7 +135,7 @@ class ArticleController extends Controller
         Gate::authorize('forceDelete', $article);
         abort_unless($article->trashed(), 409, 'Pindahkan artikel ke sampah sebelum menghapusnya permanen.');
 
-        ActivityLog::record('artikel_dihapus_permanen', "Menghapus permanen artikel \"{$article->title}\".", $article);
+        ActivityLog::record(ActivityAction::ArtikelDihapusPermanen, "Menghapus permanen artikel \"{$article->title}\".", $article);
         $article->forceDelete();
 
         return response()->noContent();

@@ -43,4 +43,10 @@ class UserFactory extends Factory
     {
         return $this->state(fn () => ['is_active' => false]);
     }
+
+    /** Akun dengan kata sandi sementara (baru dibuat Admin atau diatur ulang). */
+    public function temporaryPassword(): static
+    {
+        return $this->state(fn () => ['must_change_password' => true]);
+    }
 }

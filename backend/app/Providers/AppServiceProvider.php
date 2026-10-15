@@ -2,10 +2,9 @@
 
 namespace App\Providers;
 
-use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -13,20 +12,15 @@ use Illuminate\Validation\Rules\Password;
 class AppServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
-     */
-    public function register(): void
-    {
-        //
-    }
-
-    /**
      * Bootstrap any application services.
      */
     public function boot(): void
     {
-        // Area khusus Admin: kategori, pesan, pengguna, pengaturan, log aktivitas.
-        Gate::define('admin', fn (User $user): bool => $user->isAdmin());
+        // Dibaca dari config (bukan env() di bootstrap): env() bernilai null saat `config:cache` aktif.
+        $proxies = config('pemdi.trusted_proxies');
+        if (is_array($proxies) && $proxies !== []) {
+            TrustProxies::at($proxies === ['*'] ? '*' : $proxies);
+        }
 
         // Kebijakan kata sandi akun CMS. Tanpa cek kebocoran (uncompromised) karena itu memanggil
         // layanan pihak ketiga, sedangkan server PANRB belum tentu boleh mengakses internet.

@@ -14,7 +14,7 @@ import { useArticles } from '../services/content';
 
 const RESULT_LIMIT = 6;
 /** Jeda setelah berhenti mengetik sebelum meminta hasil ke server. */
-export const SEARCH_DEBOUNCE_MS = 250;
+const SEARCH_DEBOUNCE_MS = 250;
 
 interface SearchBarProps {
   className?: string;

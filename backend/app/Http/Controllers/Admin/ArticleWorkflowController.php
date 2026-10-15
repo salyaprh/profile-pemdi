@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ActivityAction;
 use App\Enums\ArticleStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReturnArticleRequest;
@@ -23,7 +24,7 @@ class ArticleWorkflowController extends Controller
         $article->status = ArticleStatus::Ditinjau;
         $article->review_note = null;
 
-        return $this->save($article, 'artikel_diajukan', 'Mengajukan artikel "%s" untuk ditinjau.');
+        return $this->save($article, ActivityAction::ArtikelDiajukan, 'Mengajukan artikel "%s" untuk ditinjau.');
     }
 
     public function withdraw(Article $article): AdminArticleResource
@@ -31,7 +32,7 @@ class ArticleWorkflowController extends Controller
         Gate::authorize('withdraw', $article);
         $article->status = ArticleStatus::Draf;
 
-        return $this->save($article, 'artikel_ditarik', 'Menarik pengajuan artikel "%s".');
+        return $this->save($article, ActivityAction::ArtikelDitarik, 'Menarik pengajuan artikel "%s".');
     }
 
     public function publish(Article $article): AdminArticleResource
@@ -42,7 +43,7 @@ class ArticleWorkflowController extends Controller
         // Tanggal terbit pertama dipertahankan bila artikel pernah terbit lalu dibatalkan.
         $article->published_at ??= now();
 
-        return $this->save($article, 'artikel_diterbitkan', 'Menerbitkan artikel "%s".');
+        return $this->save($article, ActivityAction::ArtikelDiterbitkan, 'Menerbitkan artikel "%s".');
     }
 
     public function return(ReturnArticleRequest $request, Article $article): AdminArticleResource
@@ -51,7 +52,7 @@ class ArticleWorkflowController extends Controller
         $article->status = ArticleStatus::Draf;
         $article->review_note = trim($request->string('note')->value());
 
-        return $this->save($article, 'artikel_dikembalikan', 'Mengembalikan artikel "%s" ke Penulis dengan catatan.');
+        return $this->save($article, ActivityAction::ArtikelDikembalikan, 'Mengembalikan artikel "%s" ke Penulis dengan catatan.');
     }
 
     public function unpublish(Article $article): AdminArticleResource
@@ -59,10 +60,10 @@ class ArticleWorkflowController extends Controller
         Gate::authorize('unpublish', $article);
         $article->status = ArticleStatus::Draf;
 
-        return $this->save($article, 'artikel_dibatalkan_terbit', 'Membatalkan penerbitan artikel "%s".');
+        return $this->save($article, ActivityAction::ArtikelDibatalkanTerbit, 'Membatalkan penerbitan artikel "%s".');
     }
 
-    private function save(Article $article, string $action, string $description): AdminArticleResource
+    private function save(Article $article, ActivityAction $action, string $description): AdminArticleResource
     {
         $article->save();
         ActivityLog::record($action, sprintf($description, $article->title), $article);

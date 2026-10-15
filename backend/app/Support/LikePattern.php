@@ -11,11 +11,6 @@ use Illuminate\Contracts\Database\Query\Builder;
  */
 final class LikePattern
 {
-    public static function contains(string $term): string
-    {
-        return '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($term)).'%';
-    }
-
     /**
      * @template TBuilder of Builder
      *
@@ -25,7 +20,7 @@ final class LikePattern
      */
     public static function whereAnyContains(Builder $query, array $columns, string $term): Builder
     {
-        $pattern = self::contains($term);
+        $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($term)).'%';
 
         return $query->where(function (Builder $where) use ($columns, $pattern): void {
             foreach ($columns as $column) {

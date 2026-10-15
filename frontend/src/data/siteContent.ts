@@ -2,10 +2,14 @@ import { paths } from '../lib/router';
 
 export const siteName = 'PEMDI PANRB';
 
+/**
+ * Deskripsi bawaan: dipakai sebagai meta deskripsi halaman yang tidak punya deskripsi sendiri dan
+ * sebagai tampilan sementara footer. Teks yang tampil di situs diatur Admin di Pengaturan.
+ */
 export const siteDescription =
   'PEMDI merangkum karya dan inisiatif TDP dalam membangun layanan pemerintah yang terintegrasi, berdampak, dan berpusat pada kebutuhan masyarakat.';
 
-export interface NavigationItem {
+interface NavigationItem {
   label: string;
   to: string;
   /** Menentukan menu aktif berdasarkan pathname saat ini. */
@@ -25,10 +29,3 @@ export const navigationItems: NavigationItem[] = [
 
 /** Kolom tautan footer yang tetap; kolom "Kategori portofolio" diambil dari API (Footer.tsx). */
 export const footerNavigation = navigationItems.map(({ label, to }) => ({ label, to }));
-
-// TODO: angka berikut masih placeholder dari desain awal. Ganti dengan data resmi PEMDI.
-export const heroStats = [
-  { value: '12+', label: 'Inisiatif transformasi' },
-  { value: '28', label: 'Layanan terdigitalisasi' },
-  { value: '100%', label: 'Berorientasi dampak' },
-];

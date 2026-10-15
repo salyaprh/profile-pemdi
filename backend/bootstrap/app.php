@@ -1,13 +1,17 @@
 <?php
 
 use App\Http\Controllers\SitemapController;
+use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\PreventCaching;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -29,10 +33,20 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias(['active' => EnsureUserIsActive::class, 'no-store' => PreventCaching::class]);
+        $middleware->alias([
+            'active' => EnsureUserIsActive::class,
+            'admin' => EnsureUserIsAdmin::class,
+            'no-store' => PreventCaching::class,
+            'password.changed' => EnsurePasswordIsChanged::class,
+        ]);
+        // Sesi berakhir bila kata sandi akunnya berubah (diganti sendiri atau diatur ulang Admin);
+        // hanya sesi yang mengganti kata sandi itu sendiri yang tetap berjalan.
+        $middleware->web(append: [AuthenticateSession::class]);
         // Tanpa ini middleware auth (berprioritas) dijalankan lebih dulu, sehingga respons 401-nya tidak
         // melewati PreventCaching.
         $middleware->prependToPriorityList(AuthenticatesRequests::class, PreventCaching::class);
+        // Middleware `admin` berjalan sebelum model rute dicari (lihat EnsureUserIsAdmin).
+        $middleware->prependToPriorityList(SubstituteBindings::class, EnsureUserIsAdmin::class);
         // Tamu yang mengakses rute ber-`auth` mendapat 401 JSON, bukan redirect ke halaman login.
         $middleware->redirectGuestsTo(fn (): ?string => null);
     })

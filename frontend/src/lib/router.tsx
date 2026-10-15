@@ -19,6 +19,12 @@ export const paths = {
   adminCategories: '/admin/kategori',
   adminMessages: '/admin/pesan',
   adminMessage: (id: number) => `/admin/pesan/${id}`,
+  adminUsers: '/admin/pengguna',
+  adminUserNew: '/admin/pengguna/baru',
+  adminUser: (id: number) => `/admin/pengguna/${id}`,
+  adminSettings: '/admin/pengaturan',
+  adminActivity: '/admin/aktivitas',
+  adminAccount: '/admin/akun',
 } as const;
 
 /** URL daftar portofolio dengan filter kategori (slug) dan halaman, mis. ?kategori=layanan-publik&halaman=2. */

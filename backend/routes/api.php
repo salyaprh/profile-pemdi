@@ -1,11 +1,14 @@
 <?php
 
+use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\ArticleWorkflowController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,9 +22,11 @@ Route::middleware('no-store')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::post('login', [AuthController::class, 'login']);
         Route::post('logout', [AuthController::class, 'logout'])->middleware('auth');
+        // Ganti kata sandi sendiri: terbuka juga bagi akun yang masih wajib menggantinya.
+        Route::put('password', [AuthController::class, 'changePassword'])->middleware(['auth', 'active', 'throttle:6,1']);
     });
 
-    Route::prefix('admin')->middleware(['auth', 'active'])->group(function () {
+    Route::prefix('admin')->middleware(['auth', 'active', 'password.changed'])->group(function () {
         Route::get('dashboard', DashboardController::class);
 
         // Artikel: hak akses per aksi diperiksa ArticlePolicy di controller.
@@ -40,7 +45,7 @@ Route::middleware('no-store')->group(function () {
         });
 
         Route::get('categories', [CategoryController::class, 'index']);
-        Route::middleware('can:admin')->whereNumber('category')->group(function () {
+        Route::middleware('admin')->whereNumber('category')->group(function () {
             Route::post('categories', [CategoryController::class, 'store']);
             Route::put('categories/{category}', [CategoryController::class, 'update']);
             Route::delete('categories/{category}', [CategoryController::class, 'destroy']);
@@ -48,12 +53,26 @@ Route::middleware('no-store')->group(function () {
 
         Route::post('media', [MediaController::class, 'store'])->middleware('throttle:30,1');
 
-        // Kotak masuk formulir "Hubungi kami".
-        Route::middleware('can:admin')->whereNumber('message')->group(function () {
-            Route::get('messages', [ContactMessageController::class, 'index']);
-            Route::get('messages/{message}', [ContactMessageController::class, 'show']);
-            Route::patch('messages/{message}', [ContactMessageController::class, 'update']);
-            Route::delete('messages/{message}', [ContactMessageController::class, 'destroy']);
+        // Area khusus Admin selain kategori (di atas): pesan, pengguna, pengaturan, log aktivitas.
+        Route::middleware('admin')->group(function () {
+            Route::whereNumber('message')->group(function () {
+                Route::get('messages', [ContactMessageController::class, 'index']);
+                Route::get('messages/{message}', [ContactMessageController::class, 'show']);
+                Route::patch('messages/{message}', [ContactMessageController::class, 'update']);
+                Route::delete('messages/{message}', [ContactMessageController::class, 'destroy']);
+            });
+
+            Route::whereNumber('user')->group(function () {
+                Route::get('users', [UserController::class, 'index']);
+                Route::post('users', [UserController::class, 'store']);
+                Route::get('users/{user}', [UserController::class, 'show']);
+                Route::put('users/{user}', [UserController::class, 'update']);
+                Route::post('users/{user}/password', [UserController::class, 'resetPassword'])->middleware('throttle:20,1');
+            });
+
+            Route::get('settings', [SettingsController::class, 'show']);
+            Route::put('settings', [SettingsController::class, 'update']);
+            Route::get('activity', [ActivityController::class, 'index']);
         });
     });
 });

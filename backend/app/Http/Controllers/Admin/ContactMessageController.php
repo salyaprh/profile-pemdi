@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ContactMessageResource;
 use App\Models\ActivityLog;
@@ -11,7 +12,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
 /**
- * Kotak masuk pesan "Hubungi kami" (khusus Admin; middleware can:admin di routes/api.php).
+ * Kotak masuk pesan "Hubungi kami" (khusus Admin; middleware admin di routes/api.php).
  * Membaca pesan tidak dicatat di log aktivitas; menghapus dicatat tanpa data pengirim.
  */
 class ContactMessageController extends Controller
@@ -21,8 +22,10 @@ class ContactMessageController extends Controller
     /** Filter: ?status=belum-dibaca, ?page=<n>. */
     public function index(Request $request): AnonymousResourceCollection
     {
+        $filters = $request->validate(['status' => ['nullable', 'string']]);
+
         $messages = ContactMessage::query()
-            ->when($request->string('status')->value() === 'belum-dibaca', fn ($query) => $query->whereNull('read_at'))
+            ->when(($filters['status'] ?? '') === 'belum-dibaca', fn ($query) => $query->whereNull('read_at'))
             ->latest('created_at')
             ->latest('id')
             ->paginate(self::PER_PAGE)
@@ -49,7 +52,7 @@ class ContactMessageController extends Controller
     public function destroy(ContactMessage $message): Response
     {
         // Data pengirim tidak ikut dicatat: log aktivitas tidak terenkripsi dan tidak ikut terhapus.
-        ActivityLog::record('pesan_dihapus', "Menghapus pesan masuk #{$message->id}.");
+        ActivityLog::record(ActivityAction::PesanDihapus, "Menghapus pesan masuk #{$message->id}.");
         $message->delete();
 
         return response()->noContent();

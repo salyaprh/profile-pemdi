@@ -29,8 +29,10 @@ class ArticleController extends Controller
         // Nilai bukan angka memakai bawaan; angka di luar batas dipangkas ke 1–24.
         $requested = filter_var($request->query('per_page'), FILTER_VALIDATE_INT);
         $perPage = $requested === false ? self::DEFAULT_PER_PAGE : min(self::MAX_PER_PAGE, max(1, $requested));
-        $category = $request->string('kategori')->trim()->value();
-        $search = mb_substr($request->string('cari')->trim()->value(), 0, 100);
+        // Parameter berbentuk array (?cari[]=x) ditolak 422, bukan jatuh menjadi galat 500.
+        $filters = $request->validate(['kategori' => ['nullable', 'string'], 'cari' => ['nullable', 'string']]);
+        $category = trim($filters['kategori'] ?? '');
+        $search = mb_substr(trim($filters['cari'] ?? ''), 0, 100);
 
         $articles = $this->published()
             ->when($category !== '', fn (Builder $query) => $query->whereRelation('category', 'slug', $category))

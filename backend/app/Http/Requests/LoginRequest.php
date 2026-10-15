@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ActivityAction;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
@@ -30,8 +31,9 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email', 'max:255'],
-            'password' => ['required', 'string', 'max:255'],
+            // bail + max lebih dulu: validator email (RFC) sangat boros memori pada string yang sangat panjang.
+            'email' => ['bail', 'required', 'string', 'max:255', 'email'],
+            'password' => ['bail', 'required', 'string', 'max:255'],
         ];
     }
 
@@ -67,13 +69,13 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->accountKey());
             RateLimiter::hit($this->ipKey());
             // Tidak dikaitkan ke pemilik akun: pelakunya belum tentu dia (bisa orang lain yang menebak).
-            ActivityLog::record('login_gagal', "Percobaan masuk gagal untuk {$email}.");
+            ActivityLog::record(ActivityAction::LoginGagal, "Percobaan masuk gagal untuk {$email}.");
 
             throw ValidationException::withMessages(['email' => 'Email atau kata sandi salah.']);
         }
 
         if (! $user->is_active) {
-            ActivityLog::record('login_ditolak', 'Akun nonaktif mencoba masuk.', user: $user);
+            ActivityLog::record(ActivityAction::LoginDitolak, 'Akun nonaktif mencoba masuk.', user: $user);
 
             throw ValidationException::withMessages([
                 'email' => 'Akun ini dinonaktifkan. Hubungi Admin untuk mengaktifkannya kembali.',

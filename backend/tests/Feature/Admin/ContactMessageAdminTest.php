@@ -73,16 +73,16 @@ class ContactMessageAdminTest extends TestCase
             ->assertJsonPath('data.message', 'Isi lengkap pesan.')
             ->assertJsonPath('data.read_at', null);
         // Membuka detail tidak menandai dibaca; frontend mengirim PATCH secara eksplisit.
-        $this->assertFalse($message->refresh()->isRead());
+        $this->assertNull($message->refresh()->read_at);
 
         $this->patchJson("/api/admin/messages/{$message->id}", ['read' => true])->assertOk();
-        $this->assertTrue($message->refresh()->isRead());
-        $firstReadAt = $message->read_at?->toIso8601String();
+        $this->assertNotNull($message->refresh()->read_at);
+        $firstReadAt = $message->read_at->toIso8601String();
 
         // Menandai dibaca lagi tidak mengubah waktu baca pertama.
         $this->travel(5)->minutes();
         $this->patchJson("/api/admin/messages/{$message->id}", ['read' => true])->assertOk();
-        $this->assertSame($firstReadAt, $message->refresh()->read_at?->toIso8601String());
+        $this->assertSame($firstReadAt, $message->refresh()->read_at->toIso8601String());
 
         $this->patchJson("/api/admin/messages/{$message->id}", ['read' => false])
             ->assertOk()

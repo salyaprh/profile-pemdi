@@ -34,6 +34,7 @@ class LoginTest extends TestCase
                 'email' => 'penulis@pemdi.test',
                 'role' => 'penulis',
                 'role_label' => 'Penulis',
+                'must_change_password' => false,
             ]]);
 
         $this->assertAuthenticatedAs($user);

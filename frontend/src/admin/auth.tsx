@@ -10,6 +10,8 @@ export interface AdminUser {
   email: string;
   role: AdminRole;
   role_label: string;
+  /** Akun baru atau kata sandi baru dari Admin: panel hanya bisa dipakai setelah menggantinya. */
+  must_change_password: boolean;
 }
 
 export interface LoginCredentials {

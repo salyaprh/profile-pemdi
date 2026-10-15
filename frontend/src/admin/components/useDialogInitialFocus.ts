@@ -6,7 +6,7 @@ import { useEffect } from 'react';
  * setelah jeda itu ke elemen yang paling tepat (pola WAI-ARIA Dialog): isian pertama, atau aksi
  * paling aman ("Batal") pada konfirmasi yang menghapus.
  */
-export const DIALOG_INITIAL_FOCUS_DELAY_MS = 150;
+const DIALOG_INITIAL_FOCUS_DELAY_MS = 150;
 
 export function useDialogInitialFocus(open: boolean, targetId: string) {
   useEffect(() => {

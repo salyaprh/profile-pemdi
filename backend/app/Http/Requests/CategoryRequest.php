@@ -10,7 +10,11 @@ class CategoryRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        $this->merge(['name' => trim((string) $this->input('name'))]);
+        $name = $this->input('name');
+        // Bukan teks (mis. array): dibiarkan apa adanya agar ditolak aturan `string`.
+        if (is_string($name)) {
+            $this->merge(['name' => trim($name)]);
+        }
     }
 
     /**
@@ -21,7 +25,7 @@ class CategoryRequest extends FormRequest
         $category = $this->route('category');
 
         return [
-            'name' => [
+            'name' => ['bail',
                 'required', 'string', 'min:3', 'max:100',
                 Rule::unique(Category::class, 'name')->ignore($category instanceof Category ? $category->id : null),
             ],

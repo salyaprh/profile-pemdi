@@ -202,7 +202,7 @@ describe('edit artikel', () => {
     await user.click(await screen.findByRole('button', { name: 'Kembalikan ke Penulis' }));
     const dialog = await screen.findByRole('dialog', { name: 'Kembalikan ke Penulis?' });
     await user.click(within(dialog).getByRole('button', { name: 'Kembalikan' }));
-    expect(within(dialog).getByText(/Catatan minimal 5 karakter/)).toBeInTheDocument();
+    expect(await within(dialog).findByText(/Catatan minimal 5 karakter/)).toBeInTheDocument();
 
     // Fokus awal dialog pindah ke kolom catatan (setelah Modal IDDS selesai memfokuskan dirinya).
     const noteField = within(dialog).getByLabelText(/Catatan perbaikan/);

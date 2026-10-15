@@ -2,18 +2,34 @@
 
 namespace App\Models;
 
+use App\Enums\ActivityAction;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * Jejak audit aksi di CMS. Catatan hanya ditambah lewat record(), tidak pernah diubah.
+ * Jejak audit aksi di CMS. Catatan hanya ditambah lewat record(), tidak pernah diubah, dan dihapus
+ * otomatis setelah masa simpan (config pemdi.activity_retention_months) oleh `model:prune`.
  */
 #[Fillable(['user_id', 'action', 'description', 'subject_type', 'subject_id', 'ip_address'])]
 class ActivityLog extends Model
 {
+    use MassPrunable;
+
     public const UPDATED_AT = null;
+
+    /** @return Builder<static> */
+    public function prunable(): Builder
+    {
+        return static::query()->where(
+            'created_at',
+            '<=',
+            now()->subMonths((int) config('pemdi.activity_retention_months')),
+        );
+    }
 
     /**
      * @return array<string, string>
@@ -29,13 +45,13 @@ class ActivityLog extends Model
      * Mencatat aksi. Pelaku default-nya pengguna yang sedang login; isi `$user` untuk aksi
      * sebelum login selesai (mis. percobaan masuk) atau dari konsol.
      */
-    public static function record(string $action, string $description, ?Model $subject = null, ?User $user = null): self
+    public static function record(ActivityAction $action, string $description, ?Model $subject = null, ?User $user = null): self
     {
         $actor = $user ?? auth()->user();
 
         return self::create([
             'user_id' => $actor?->getKey(),
-            'action' => $action,
+            'action' => $action->value,
             'description' => mb_substr($description, 0, 500),
             'subject_type' => $subject?->getMorphClass(),
             'subject_id' => $subject?->getKey(),

@@ -1,9 +1,8 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { heroStats } from '../data/siteContent';
-import { testArticles } from '../test/publicApi';
+import { testArticles, testSite } from '../test/publicApi';
 import { server } from '../test/server';
 import { renderPublic } from '../test/utils';
 import Home from './Home';
@@ -29,12 +28,29 @@ describe('Home', () => {
     expect(screen.getByRole('link', { name: 'Hubungi TDP' })).toHaveAttribute('href', '/contact');
   });
 
-  it('menampilkan seluruh statistik', () => {
+  it('menampilkan tiga angka dari pengaturan situs, dengan kerangka selama memuat', async () => {
     renderPublic(<Home />);
-    for (const { value, label } of heroStats) {
-      expect(screen.getByText(value)).toBeInTheDocument();
+    expect(screen.queryByText(testSite.hero_stats[0].label)).not.toBeInTheDocument();
+
+    for (const { value, label } of testSite.hero_stats) {
+      expect(await screen.findByText(value)).toBeInTheDocument();
       expect(screen.getByText(label)).toBeInTheDocument();
     }
+  });
+
+  it('bagian angka tidak tampil bila pengaturan gagal dimuat (bukan angka tebakan)', async () => {
+    let failed = false;
+    server.use(
+      http.get('/api/site', () => {
+        failed = true;
+        return HttpResponse.json({}, { status: 500 });
+      }),
+    );
+    renderPublic(<Home />);
+
+    await waitFor(() => expect(failed).toBe(true));
+    await screen.findByRole('link', { name: /Lihat portofolio/ });
+    expect(screen.queryByText(testSite.hero_stats[0].value)).not.toBeInTheDocument();
   });
 
   it('meminta 3 artikel terbit terbaru dari API dan menautkan masing-masing ke detail', async () => {

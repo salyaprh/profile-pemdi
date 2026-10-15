@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\ActivityAction;
 use App\Enums\Role;
+use App\Http\Requests\PasswordMessages;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -44,10 +46,7 @@ class CreateAdminCommand extends Command
                 'email.email' => 'Format email tidak valid.',
                 'email.unique' => 'Email ini sudah terdaftar.',
                 'password.confirmed' => 'Kata sandi dan ulangannya tidak sama.',
-                'password.min' => 'Kata sandi minimal 12 karakter.',
-                'password.letters' => 'Kata sandi harus memuat huruf.',
-                'password.mixed' => 'Kata sandi harus memuat huruf besar dan huruf kecil.',
-                'password.numbers' => 'Kata sandi harus memuat angka.',
+                ...PasswordMessages::all(),
             ],
         );
 
@@ -64,7 +63,7 @@ class CreateAdminCommand extends Command
         $user->is_active = true;
         $user->save();
 
-        ActivityLog::record('pengguna_dibuat', "Admin {$user->email} dibuat lewat konsol.", $user);
+        ActivityLog::record(ActivityAction::PenggunaDibuat, "Admin {$user->email} dibuat lewat konsol.", $user);
         $this->info("Admin {$user->email} berhasil dibuat.");
 
         return self::SUCCESS;
