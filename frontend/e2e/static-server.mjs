@@ -4,7 +4,8 @@
 // - SPA fallback: path tanpa ekstensi yang tidak ada dilayani index.html dengan status 200
 // - path berekstensi yang tidak ada mengembalikan 404 sungguhan
 // - _headers dan _redirects tidak dilayani
-// - /api/ dan /storage/ diteruskan ke backend Laravel (BACKEND_URL), satu origin seperti produksi
+// - /api/, /storage/, dan /sitemap.xml diteruskan ke backend Laravel (BACKEND_URL), satu origin
+//   seperti produksi
 //
 // Pakai: DIST_DIR=dist PORT=4173 BACKEND_URL=http://127.0.0.1:8001 node e2e/static-server.mjs
 import fs from 'node:fs';
@@ -15,6 +16,7 @@ const root = path.resolve(process.env.DIST_DIR ?? 'dist');
 const port = Number(process.env.PORT ?? 4173);
 const backend = process.env.BACKEND_URL ? new URL(process.env.BACKEND_URL) : null;
 const backendPrefixes = ['/api/', '/storage/'];
+const backendPaths = ['/sitemap.xml'];
 
 const rules = [];
 let current = null;
@@ -95,7 +97,10 @@ http
   .createServer((req, res) => {
     const requestPath = safeDecode(new URL(req.url ?? '/', 'http://localhost').pathname);
 
-    if (backend && backendPrefixes.some((prefix) => requestPath.startsWith(prefix))) {
+    const toBackend =
+      backendPrefixes.some((prefix) => requestPath.startsWith(prefix)) ||
+      backendPaths.includes(requestPath);
+    if (backend && toBackend) {
       proxyToBackend(req, res, requestPath);
       return;
     }

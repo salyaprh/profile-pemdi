@@ -1,75 +1,87 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
-import * as data from '../data/articlesData';
-import { formatDate } from '../lib/format';
+import { http, HttpResponse } from 'msw';
+import { describe, expect, it } from 'vitest';
+import { testArticles, toSummary } from '../test/publicApi';
+import { server } from '../test/server';
+import { renderPublic } from '../test/utils';
 import ArticleDetail from './ArticleDetail';
 
-const article = data.articles[0]; // id '1', Kebijakan & Regulasi
+const article = testArticles[0]; // Layanan Publik, terbit 24 Januari 2025 09.00 WIB
+
+async function renderArticle(slug = article.slug) {
+  const user = userEvent.setup();
+  const view = renderPublic(<ArticleDetail slug={slug} />);
+  await screen.findByRole('heading', { level: 1 });
+  return { user, ...view };
+}
 
 describe('ArticleDetail', () => {
-  it('menampilkan header artikel: kategori, waktu baca, judul, ringkasan, tanggal, penulis', () => {
-    render(<ArticleDetail articleId={article.id} />);
-
-    expect(screen.getByRole('heading', { level: 1, name: article.title })).toBeInTheDocument();
-    expect(screen.getByText(article.category)).toBeInTheDocument();
-    expect(screen.getByText(article.excerpt)).toBeInTheDocument();
-    expect(screen.getByText(`${data.getReadingMinutes(article)} menit baca`)).toBeInTheDocument();
-    expect(screen.getByText(article.author)).toBeInTheDocument();
+  it('menampilkan kerangka dengan status "Memuat" selama artikel diambil', () => {
+    renderPublic(<ArticleDetail slug={article.slug} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Memuat artikel');
+    expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute(
+      'content',
+      'noindex',
+    );
   });
 
-  it('memformat tanggal dalam bahasa Indonesia dan menyertakan <time datetime>', () => {
-    const { container } = render(<ArticleDetail articleId={article.id} />);
+  it('menampilkan header artikel: kategori, waktu baca, judul, ringkasan, tanggal, penulis', async () => {
+    await renderArticle();
+
+    expect(screen.getByRole('heading', { level: 1, name: article.title })).toBeInTheDocument();
+    expect(screen.getByText(article.category.name)).toBeInTheDocument();
+    expect(screen.getByText(article.excerpt)).toBeInTheDocument();
+    expect(screen.getByText('2 menit baca')).toBeInTheDocument();
+    expect(screen.getByText(article.author.name)).toBeInTheDocument();
+    expect(screen.getByText('HA')).toBeInTheDocument(); // avatar inisial penulis
+  });
+
+  it('memformat tanggal terbit (WIB) dan menyertakan <time datetime>', async () => {
+    const { container } = await renderArticle();
     const time = container.querySelector('time');
-    expect(time).toHaveAttribute('datetime', article.date);
-    expect(time).toHaveTextContent(formatDate(article.date));
+    expect(time).toHaveAttribute('datetime', article.published_at);
     expect(time).toHaveTextContent('24 Januari 2025');
   });
 
-  it('menampilkan avatar inisial penulis yang dekoratif', () => {
-    render(<ArticleDetail articleId={article.id} />);
-    expect(screen.getByText('HA')).toBeInTheDocument();
-  });
-
-  it('menampilkan gambar utama dengan alt, dimensi intrinsik, dan prioritas muat', () => {
-    render(<ArticleDetail articleId={article.id} />);
-    const image = screen.getByRole('img', { name: article.title });
-    expect(image).toHaveAttribute('src', article.mediaSrc);
-    expect(image).toHaveAttribute('width', '328');
-    expect(image).toHaveAttribute('height', '202');
+  it('menampilkan gambar sampul dengan prioritas muat; alt kosong karena judul sudah ada', async () => {
+    const { container } = await renderArticle();
+    const image = container.querySelector('figure img');
+    expect(image).toHaveAttribute('src', article.cover_url);
+    expect(image).toHaveAttribute('alt', '');
     expect(image).toHaveAttribute('fetchpriority', 'high');
-    expect(image).toHaveAttribute('decoding', 'async');
   });
 
-  it('menampilkan seluruh paragraf isi (fallback placeholder bila content kosong)', () => {
-    render(<ArticleDetail articleId={article.id} />);
-    for (const paragraph of data.placeholderContent) {
-      expect(screen.getByText(paragraph.slice(0, 60), { exact: false })).toBeInTheDocument();
-    }
+  it('merender isi HTML dari server di dalam .article-body (judul bagian dan tautan)', async () => {
+    const { container } = await renderArticle();
+    const body = container.querySelector('.article-body');
+    expect(body).not.toBeNull();
+    expect(
+      within(body as HTMLElement).getByRole('heading', { level: 2, name: 'Latar belakang' }),
+    ).toBeInTheDocument();
+    expect(within(body as HTMLElement).getByRole('link', { name: 'tautan resmi' })).toHaveAttribute(
+      'href',
+      'https://www.menpan.go.id',
+    );
   });
 
-  it('tidak menampilkan baris sumber bila artikel tidak punya source', () => {
-    render(<ArticleDetail articleId={article.id} />);
+  it('tidak menampilkan baris sumber bila artikel tidak punya sumber', async () => {
+    await renderArticle();
     expect(screen.queryByText(/Sumber:/)).not.toBeInTheDocument();
   });
 
-  it('menampilkan baris sumber dan isi khusus bila artikel punya source dan content', () => {
-    vi.spyOn(data, 'getArticleById').mockReturnValue({
-      ...article,
-      source: 'inadigitalnews.com',
-      content: ['Paragraf khusus artikel ini.'],
-    });
-    render(<ArticleDetail articleId={article.id} />);
-
-    expect(screen.getByText('Sumber: inadigitalnews.com')).toBeInTheDocument();
-    expect(screen.getByText('Paragraf khusus artikel ini.')).toBeInTheDocument();
-    expect(
-      screen.queryByText(data.placeholderContent[0].slice(0, 40), { exact: false }),
-    ).toBeNull();
+  it('menampilkan sumber di bawah gambar sampul bila diisi', async () => {
+    await renderArticle(testArticles[2].slug);
+    expect(screen.getByText('Sumber: Biro Hubungan Masyarakat')).toBeInTheDocument();
   });
 
-  it('mengatur judul dokumen, deskripsi, dan tidak menandai noindex', () => {
-    render(<ArticleDetail articleId={article.id} />);
+  it('artikel tanpa sampul tidak menampilkan gambar kosong', async () => {
+    const { container } = await renderArticle(testArticles[4].slug);
+    expect(container.querySelector('figure')).toBeNull();
+  });
+
+  it('mengatur judul dokumen, deskripsi, canonical slug, dan tidak menandai noindex', async () => {
+    await renderArticle();
     expect(document.title).toBe(`${article.title} | PEMDI PANRB`);
     expect(document.head.querySelector('meta[name="description"]')).toHaveAttribute(
       'content',
@@ -79,8 +91,8 @@ describe('ArticleDetail', () => {
   });
 
   describe('breadcrumb', () => {
-    it('menampilkan Beranda > Portofolio > judul (dipotong 24 karakter)', () => {
-      render(<ArticleDetail articleId={article.id} />);
+    it('menampilkan Beranda > Portofolio > judul (dipotong 24 karakter)', async () => {
+      await renderArticle();
       const nav = screen.getByRole('navigation', { name: 'Breadcrumb' });
 
       expect(within(nav).getByText('Beranda')).toBeInTheDocument();
@@ -89,70 +101,83 @@ describe('ArticleDetail', () => {
       expect(within(nav).queryByText(article.title)).not.toBeInTheDocument();
     });
 
-    it('klik Beranda dan Portofolio berpindah halaman', async () => {
-      const user = userEvent.setup();
-      const { unmount } = render(<ArticleDetail articleId={article.id} />);
+    it('klik Portofolio berpindah halaman', async () => {
+      const { user } = await renderArticle();
       await user.click(
         within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByText('Portofolio'),
       );
       expect(window.location.pathname).toBe('/portfolio');
-      unmount();
-
-      render(<ArticleDetail articleId={article.id} />);
-      await user.click(
-        within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByText('Beranda'),
-      );
-      expect(window.location.pathname).toBe('/');
     });
   });
 
   describe('artikel terkait', () => {
-    it('menampilkan 3 artikel sekategori selain artikel ini', () => {
-      render(<ArticleDetail articleId={article.id} />);
+    it('menampilkan artikel terkait dari respons API, tanpa artikel ini sendiri', async () => {
+      await renderArticle();
       const section = screen.getByRole('region', { name: 'Artikel terkait' });
       const hrefs = within(section)
         .getAllByRole('link')
         .map((l) => l.getAttribute('href'))
-        .filter((href) => /^\/portfolio\/\d+$/.test(href ?? ''));
+        .filter((href) => /^\/portfolio\/[^/?]+$/.test(href ?? ''));
 
-      const expected = data.getRelatedArticles(article).map((a) => `/portfolio/${a.id}`);
-      expect(hrefs).toEqual(expected);
-      expect(hrefs).toHaveLength(3);
-      expect(hrefs).not.toContain(`/portfolio/${article.id}`);
-    });
-
-    it('"Lihat semua" menaut ke daftar portofolio kategori yang sama', () => {
-      render(<ArticleDetail articleId={article.id} />);
-      const link = screen.getByRole('link', { name: /Lihat semua/ });
-      expect(link).toHaveAttribute(
-        'href',
-        `/portfolio?kategori=${encodeURIComponent(article.category)}`,
+      expect(hrefs).toEqual(
+        testArticles
+          .filter((a) => a.category.slug === article.category.slug && a.slug !== article.slug)
+          .slice(0, 3)
+          .map((a) => `/portfolio/${a.slug}`),
       );
     });
 
-    it('bagian terkait tidak ditampilkan bila tidak ada artikel terkait', () => {
-      vi.spyOn(data, 'getRelatedArticles').mockReturnValue([]);
-      render(<ArticleDetail articleId={article.id} />);
+    it('"Lihat semua" menaut ke daftar portofolio kategori yang sama (slug)', async () => {
+      await renderArticle();
+      expect(screen.getByRole('link', { name: /Lihat semua/ })).toHaveAttribute(
+        'href',
+        '/portfolio?kategori=layanan-publik',
+      );
+    });
+
+    it('bagian terkait tidak ditampilkan bila tidak ada artikel terkait', async () => {
+      server.use(
+        http.get('/api/articles/:slug', () => HttpResponse.json({ data: article, related: [] })),
+      );
+      await renderArticle();
       expect(screen.queryByRole('region', { name: 'Artikel terkait' })).not.toBeInTheDocument();
     });
   });
 
-  describe('artikel tidak ditemukan', () => {
-    it('menampilkan halaman 404 khusus artikel, bukan error', () => {
-      render(<ArticleDetail articleId="999" />);
+  describe('artikel tidak ditemukan (404 dari API)', () => {
+    it('menampilkan halaman 404 khusus artikel, noindex, dan judul dokumen yang jelas', async () => {
+      await renderArticle('tidak-ada');
       expect(
         screen.getByRole('heading', { level: 1, name: 'Artikel tidak ditemukan' }),
       ).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Kembali ke beranda' })).toBeInTheDocument();
-    });
-
-    it('menandai noindex dan memberi judul dokumen yang jelas', () => {
-      render(<ArticleDetail articleId="999" />);
       expect(document.title).toBe('Artikel tidak ditemukan | PEMDI PANRB');
       expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute(
         'content',
         'noindex',
       );
     });
+  });
+
+  it('gagal memuat (bukan 404): pesan galat dan coba lagi, bukan halaman 404', async () => {
+    let calls = 0;
+    server.use(
+      http.get('/api/articles/:slug', () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.error()
+          : HttpResponse.json({ data: article, related: testArticles.slice(1, 2).map(toSummary) });
+      }),
+    );
+    const { user } = await renderArticle();
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Artikel gagal dimuat' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Tidak dapat terhubung ke server/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Coba lagi' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: article.title }),
+    ).toBeInTheDocument();
   });
 });

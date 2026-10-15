@@ -1,14 +1,24 @@
-import type { Page, Route } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { audit } from './a11y.helper';
+import { loginAs, uniqueSuffix } from './admin.helper';
 import { expect, test } from './fixtures';
 
+// Formulir kontak terhadap backend Laravel sungguhan (POST /api/contact tanpa sesi). Kegagalan
+// server dan jaringan disimulasikan dengan page.route.
 const API = '**/api/contact';
 
-async function fillValid(page: Page) {
+async function fillValid(page: Page, subject = 'Kolaborasi program') {
   await page.getByLabel(/Nama lengkap/).fill('Budi Santoso');
   await page.getByLabel(/^Email/).fill('budi@instansi.go.id');
-  await page.getByLabel(/Subjek/).fill('Kolaborasi program');
+  await page.getByLabel(/Subjek/).fill(subject);
   await page.getByLabel(/^Pesan/).fill('Halo, kami ingin berdiskusi terkait kolaborasi program.');
 }
+
+const accepted = {
+  status: 202,
+  contentType: 'application/json',
+  body: '{"message":"Pesan diterima."}',
+};
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/contact');
@@ -20,7 +30,7 @@ test('submit kosong menampilkan error tiap field wajib dan memfokuskan field per
   let requests = 0;
   await page.route(API, async (route) => {
     requests += 1;
-    await route.fulfill({ status: 200, body: '{}' });
+    await route.fulfill(accepted);
   });
 
   await page.getByRole('button', { name: 'Kirim pesan' }).click();
@@ -44,43 +54,98 @@ test('validasi berjalan langsung setelah submit pertama', async ({ page }) => {
   await expect(page.getByText('Format email tidak valid')).toBeHidden();
 });
 
-test('berhasil: mengirim JSON yang benar, menampilkan toast, dan mengosongkan form', async ({
-  page,
-}) => {
-  let body: unknown;
-  await page.route(API, async (route: Route) => {
-    body = route.request().postDataJSON();
-    expect(route.request().method()).toBe('POST');
-    await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
-  });
-  await fillValid(page);
-
-  await page.getByRole('button', { name: 'Kirim pesan' }).click();
-
-  await expect(page.getByText('Pesan terkirim')).toBeVisible();
-  expect(body).toEqual({
-    name: 'Budi Santoso',
-    email: 'budi@instansi.go.id',
-    phone: '',
-    subject: 'Kolaborasi program',
-    message: 'Halo, kami ingin berdiskusi terkait kolaborasi program.',
-  });
-  await expect(page.getByLabel(/Nama lengkap/)).toHaveValue('');
-});
-
-test('nomor ponsel dikirim dalam format internasional', async ({ page }) => {
-  let body: { phone?: string } = {};
-  await page.route(API, async (route) => {
-    body = route.request().postDataJSON() as { phone?: string };
-    await route.fulfill({ status: 200, body: '{}' });
-  });
-  await fillValid(page);
+test('pesan tersimpan di server lalu tampil di kotak masuk Admin', async ({ page, context }) => {
+  const subject = `Kolaborasi program ${uniqueSuffix()}`;
+  await fillValid(page, subject);
   await page.getByPlaceholder('878-8668-3355').fill('81234567890');
 
+  const request = page.waitForRequest((req) => req.url().endsWith('/api/contact'));
+  const response = page.waitForResponse((res) => res.url().endsWith('/api/contact'));
   await page.getByRole('button', { name: 'Kirim pesan' }).click();
 
   await expect(page.getByText('Pesan terkirim')).toBeVisible();
-  expect(body.phone).toMatch(/^\+62\d{9,13}$/);
+  expect((await response).status()).toBe(202);
+  const sent = await request;
+  expect(sent.postDataJSON()).toMatchObject({
+    name: 'Budi Santoso',
+    email: 'budi@instansi.go.id',
+    subject,
+    phone: expect.stringMatching(/^\+62\d{9,13}$/),
+    token: expect.any(String),
+    kolom_khusus: '',
+  });
+  // Tanpa sesi: tidak ada token CSRF dan tidak ada cookie yang dibuat untuk pengunjung.
+  expect(await sent.headerValue('x-xsrf-token')).toBeNull();
+  expect(await context.cookies()).toEqual([]);
+  await expect(page.getByLabel(/Nama lengkap/)).toHaveValue('');
+
+  await loginAs(page, 'admin');
+  await page.goto('/admin/pesan?status=belum-dibaca');
+  await page.getByRole('link', { name: subject }).click();
+  await expect(page.getByRole('heading', { name: subject, level: 1 })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'budi@instansi.go.id' })).toBeVisible();
+  await expect(
+    page.getByText('Halo, kami ingin berdiskusi terkait kolaborasi program.'),
+  ).toBeVisible();
+  // Dibuka = ditandai dibaca, sehingga tidak lagi muncul di filter "Belum dibaca".
+  await expect(page.getByRole('button', { name: 'Tandai belum dibaca' })).toBeVisible();
+  expect(await audit(page)).toEqual([]);
+
+  await page.goto('/admin/pesan?status=belum-dibaca');
+  await expect(page.getByRole('status').filter({ hasText: /pesan$/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: subject })).toHaveCount(0);
+  expect(await audit(page)).toEqual([]);
+});
+
+test('Admin menghapus pesan setelah konfirmasi', async ({ page }) => {
+  const subject = `Pesan untuk dihapus ${uniqueSuffix()}`;
+  await fillValid(page, subject);
+  await page.getByRole('button', { name: 'Kirim pesan' }).click();
+  await expect(page.getByText('Pesan terkirim')).toBeVisible();
+
+  await loginAs(page, 'admin');
+  await page.goto('/admin/pesan');
+  await page.getByRole('link', { name: subject }).click();
+  await page.getByRole('button', { name: 'Hapus pesan' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Hapus pesan?' });
+  await expect(dialog.getByRole('button', { name: 'Batal' })).toBeFocused();
+  expect(await audit(page)).toEqual([]);
+  await dialog.getByRole('button', { name: 'Hapus pesan' }).click();
+
+  await expect(page.getByText('Pesan dihapus')).toBeVisible();
+  await expect(page).toHaveURL('/admin/pesan');
+  await expect(page.getByRole('link', { name: subject })).toHaveCount(0);
+});
+
+test('Penulis tidak dapat membuka kotak masuk', async ({ page }) => {
+  await loginAs(page, 'penulis');
+  await page.goto('/admin/pesan');
+  await expect(page.getByText('Halaman ini khusus Admin')).toBeVisible();
+
+  const response = await page.request.get('/api/admin/messages', {
+    headers: { Accept: 'application/json' },
+  });
+  expect(response.status()).toBe(403);
+});
+
+test('galat validasi dari server tampil di kolomnya', async ({ page, problems }) => {
+  problems.allowConsoleErrors.push(/status of 422/);
+  await page.route(API, (route) =>
+    route.fulfill({
+      status: 422,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: 'Data tidak valid.',
+        errors: { subject: ['Subjek maksimal 150 karakter'] },
+      }),
+    }),
+  );
+  await fillValid(page);
+
+  await page.getByRole('button', { name: 'Kirim pesan' }).click();
+
+  await expect(page.getByText('Subjek maksimal 150 karakter')).toBeVisible();
+  await expect(page.getByLabel(/Subjek/)).toBeFocused();
 });
 
 test('dropdown negara pada input telepon terbuka dengan banyak pilihan', async ({ page }) => {
@@ -119,7 +184,7 @@ test('klik ganda hanya mengirim satu permintaan', async ({ page }) => {
   await page.route(API, async (route) => {
     requests += 1;
     await new Promise((resolve) => setTimeout(resolve, 400));
-    await route.fulfill({ status: 200, body: '{}' });
+    await route.fulfill(accepted);
   });
   await fillValid(page);
 
@@ -133,7 +198,7 @@ test('klik ganda hanya mengirim satu permintaan', async ({ page }) => {
 test('selama pengiriman tombol menampilkan "Mengirim…" dan dinonaktifkan', async ({ page }) => {
   await page.route(API, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 600));
-    await route.fulfill({ status: 200, body: '{}' });
+    await route.fulfill(accepted);
   });
   await fillValid(page);
 

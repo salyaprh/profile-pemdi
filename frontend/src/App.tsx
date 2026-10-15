@@ -1,4 +1,5 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
+import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import AdminLoadingScreen from './admin/AdminLoadingScreen';
 import Layout from './components/Layout';
 import { isAdminPath, paths, useLocation } from './lib/router';
@@ -7,6 +8,7 @@ import Articles from './pages/Articles';
 import Contact from './pages/Contact';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
+import { createPublicQueryClient } from './services/queryClient';
 
 // Kode panel admin dipisah ke chunk sendiri: pengunjung situs publik tidak mengunduhnya.
 const AdminApp = lazy(() => import('./admin/AdminApp'));
@@ -26,15 +28,17 @@ function renderRoute(pathname: string) {
 
   const articleMatch = pathname.match(/^\/portfolio\/([^/]+)$/);
   if (articleMatch) {
-    const articleId = decodeSegment(articleMatch[1]);
-    if (articleId !== null) return <ArticleDetail articleId={articleId} />;
+    const slug = decodeSegment(articleMatch[1]);
+    if (slug !== null) return <ArticleDetail slug={slug} />;
   }
 
   return <NotFound />;
 }
 
-export default function App() {
+export default function App({ queryClient: provided }: { queryClient?: QueryClient }) {
   const { pathname } = useLocation();
+  // `queryClient` hanya diisi uji (tanpa percobaan ulang); aplikasi membuat sendiri.
+  const [queryClient] = useState(() => provided ?? createPublicQueryClient());
 
   if (isAdminPath(pathname)) {
     return (
@@ -44,5 +48,9 @@ export default function App() {
     );
   }
 
-  return <Layout>{renderRoute(pathname)}</Layout>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Layout>{renderRoute(pathname)}</Layout>
+    </QueryClientProvider>
+  );
 }

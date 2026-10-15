@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures';
+import { seeded } from './helpers';
 
 const SITE = 'https://pemdi.example.go.id';
 
@@ -6,7 +7,7 @@ test.describe('HTML statis (yang dilihat crawler tanpa JavaScript)', () => {
   test('memuat meta tingkat situs, bahasa Indonesia, dan TIDAK memuat canonical/og:url', async ({
     request,
   }) => {
-    const html = await (await request.get('/portfolio/3')).text();
+    const html = await (await request.get(`/portfolio/${seeded.serviceArticle.slug}`)).text();
 
     expect(html).toMatch(/<html[^>]*\blang="id"/);
     expect(html).toContain('property="og:type" content="website"');
@@ -24,7 +25,11 @@ test.describe('meta per halaman (setelah JavaScript berjalan)', () => {
     { path: '/', canonical: `${SITE}/`, title: 'Pemerintah Digital | PEMDI PANRB' },
     { path: '/portfolio', canonical: `${SITE}/portfolio`, title: 'Portofolio | PEMDI PANRB' },
     { path: '/contact', canonical: `${SITE}/contact`, title: 'Hubungi kami | PEMDI PANRB' },
-    { path: '/portfolio/3', canonical: `${SITE}/portfolio/3`, title: /Terpusat di INAgov/ },
+    {
+      path: `/portfolio/${seeded.serviceArticle.slug}`,
+      canonical: `${SITE}/portfolio/${seeded.serviceArticle.slug}`,
+      title: /Terpusat di INAgov/,
+    },
   ];
 
   for (const { path, canonical, title } of pages) {
@@ -44,7 +49,7 @@ test.describe('meta per halaman (setelah JavaScript berjalan)', () => {
   }
 
   test('canonical tidak memuat query string (filter dan halaman)', async ({ page }) => {
-    await page.goto('/portfolio?kategori=Layanan+Publik&halaman=2');
+    await page.goto('/portfolio?kategori=layanan-publik&halaman=2');
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
       `${SITE}/portfolio`,
@@ -57,7 +62,9 @@ test.describe('meta per halaman (setelah JavaScript berjalan)', () => {
   });
 
   for (const path of ['/halaman-ngawur', '/portfolio/999']) {
-    test(`${path}: noindex dan tanpa canonical`, async ({ page }) => {
+    test(`${path}: noindex dan tanpa canonical`, async ({ page, problems }) => {
+      // Artikel tidak ditemukan = respons 404 dari API, yang dicatat browser sebagai error konsol.
+      problems.allowConsoleErrors.push(/status of 404/);
       await page.goto(path);
       await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
       await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import cases from './contact-validation-cases.json';
 import {
   MESSAGE_MAX_LENGTH,
   isEmptyPhone,
@@ -109,4 +110,30 @@ describe('validateMessage', () => {
     expect(result.isValid).toBe(false);
     expect(result.message).toBe(`Pesan maksimal ${MESSAGE_MAX_LENGTH} karakter`);
   });
+});
+
+describe('kasus bersama dengan backend (contact-validation-cases.json)', () => {
+  type Value = string | { ulang: string; kali: number };
+  const expand = (value: Value) =>
+    typeof value === 'string' ? value : value.ulang.repeat(value.kali);
+
+  const rules = {
+    name: validateName,
+    email: validateEmail,
+    phone: validateOptionalPhone,
+    subject: validateSubject,
+    message: validateMessage,
+  } as const;
+
+  for (const field of Object.keys(rules) as (keyof typeof rules)[]) {
+    const fieldCases = (cases as unknown as Record<string, { value: Value; valid: boolean }[]>)[
+      field
+    ];
+    it.each(fieldCases.map(({ value, valid }) => [field, expand(value), valid] as const))(
+      '%s %j -> valid: %s',
+      (name, value, valid) => {
+        expect(rules[name](value).isValid).toBe(valid);
+      },
+    );
+  }
 });

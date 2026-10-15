@@ -1,14 +1,57 @@
+import { Button } from '@idds/react';
 import { IconArrowRight } from '@tabler/icons-react';
-import ArticleCard from '../components/ArticleCard';
+import ArticleCard, { ArticleGridSkeleton } from '../components/ArticleCard';
 import ButtonLink from '../components/ButtonLink';
-import { articles } from '../data/articlesData';
+import EmptyState from '../components/EmptyState';
 import { heroStats } from '../data/siteContent';
 import { paths } from '../lib/router';
 import { usePageMeta } from '../lib/seo';
+import { useArticles } from '../services/content';
+
+const FEATURED_COUNT = 3;
+
+/** Tiga artikel terbit terbaru (pola Blog Section IDDS). */
+function FeaturedArticles() {
+  const articles = useArticles({ perPage: FEATURED_COUNT });
+
+  if (articles.isPending) return <ArticleGridSkeleton count={FEATURED_COUNT} />;
+
+  if (articles.isError) {
+    return (
+      <EmptyState
+        title="Artikel gagal dimuat"
+        description={articles.error.message}
+        action={
+          <Button hierarchy="secondary" onClick={() => void articles.refetch()}>
+            Coba lagi
+          </Button>
+        }
+      />
+    );
+  }
+
+  if (articles.data.data.length === 0) {
+    return (
+      <EmptyState
+        title="Belum ada artikel"
+        description="Artikel yang terbit akan tampil di sini."
+      />
+    );
+  }
+
+  return (
+    <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+      {articles.data.data.map((article) => (
+        <li key={article.slug}>
+          <ArticleCard article={article} />
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function Home() {
   usePageMeta({ title: 'Pemerintah Digital', path: paths.home });
-  const featuredArticles = articles.slice(0, 3);
 
   return (
     <>
@@ -91,13 +134,7 @@ export default function Home() {
             </p>
           </div>
 
-          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-            {featuredArticles.map((article) => (
-              <li key={article.id}>
-                <ArticleCard article={article} />
-              </li>
-            ))}
-          </ul>
+          <FeaturedArticles />
 
           <div>
             <ButtonLink to={paths.portfolio} hierarchy="primary" size="lg">

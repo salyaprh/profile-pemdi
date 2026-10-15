@@ -1,5 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
-import type { ContactMessage } from './contact';
+import { http, HttpResponse } from 'msw';
+import { describe, expect, it } from 'vitest';
+import { server, setXsrfCookie } from '../test/server';
+import { ApiError } from './api';
+import { fetchContactToken, sendContactMessage, type ContactMessage } from './contact';
 
 const payload: ContactMessage = {
   name: 'Budi Santoso',
@@ -9,64 +12,69 @@ const payload: ContactMessage = {
   message: 'Halo, kami ingin berdiskusi.',
 };
 
-async function load(endpoint: string) {
-  // contact.ts membaca VITE_CONTACT_ENDPOINT saat modul dimuat.
-  vi.resetModules();
-  vi.stubEnv('VITE_CONTACT_ENDPOINT', endpoint);
-  return import('./contact');
-}
+describe('fetchContactToken', () => {
+  it('mengambil token formulir dari /api/contact/token', async () => {
+    await expect(fetchContactToken()).resolves.toBe('token-formulir-uji');
+  });
+});
 
 describe('sendContactMessage', () => {
-  it('endpoint belum diset: mengembalikan not-configured, tidak memanggil fetch, dan memperingatkan di dev', async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const { sendContactMessage } = await load('');
+  it('POST JSON ke /api/contact berisi pesan, token, dan kolom jebakan bot', async () => {
+    let body: unknown;
+    let contentType: string | null = null;
+    server.use(
+      http.post('/api/contact', async ({ request }) => {
+        body = await request.json();
+        contentType = request.headers.get('Content-Type');
+        return HttpResponse.json({ message: 'Pesan diterima.' }, { status: 202 });
+      }),
+    );
 
-    await expect(sendContactMessage(payload)).resolves.toBe('not-configured');
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('VITE_CONTACT_ENDPOINT'));
+    await sendContactMessage(payload, { token: 't', honeypot: '' });
+
+    expect(contentType).toBe('application/json');
+    expect(body).toEqual({ ...payload, token: 't', kolom_khusus: '' });
   });
 
-  it('endpoint hanya spasi dianggap belum diset', async () => {
-    vi.stubGlobal('fetch', vi.fn());
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const { sendContactMessage } = await load('   ');
-    await expect(sendContactMessage(payload)).resolves.toBe('not-configured');
+  it('tidak membawa token CSRF meski cookie XSRF-TOKEN ada (endpoint tanpa sesi)', async () => {
+    setXsrfCookie('token-sesi-admin');
+    let xsrf: string | null = 'belum diperiksa';
+    server.use(
+      http.post('/api/contact', ({ request }) => {
+        xsrf = request.headers.get('X-XSRF-TOKEN');
+        return HttpResponse.json({}, { status: 202 });
+      }),
+    );
+
+    await sendContactMessage(payload, { token: 't', honeypot: '' });
+
+    expect(xsrf).toBeNull();
   });
 
-  it('mengirim POST JSON ke endpoint dan mengembalikan sent', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
-    vi.stubGlobal('fetch', fetchMock);
-    const { sendContactMessage } = await load('/api/contact');
+  it('galat validasi diteruskan sebagai ApiError 422 berisi galat per kolom', async () => {
+    server.use(
+      http.post('/api/contact', () =>
+        HttpResponse.json(
+          { message: 'Data tidak valid.', errors: { email: ['Format email tidak valid'] } },
+          { status: 422 },
+        ),
+      ),
+    );
 
-    await expect(sendContactMessage(payload)).resolves.toBe('sent');
-    expect(fetchMock).toHaveBeenCalledOnce();
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('/api/contact');
-    expect(init.method).toBe('POST');
-    expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
-    expect(JSON.parse(init.body as string)).toEqual(payload);
+    const error = await sendContactMessage(payload, { token: 't', honeypot: '' }).catch(
+      (caught: unknown) => caught,
+    );
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({
+      status: 422,
+      fieldErrors: { email: 'Format email tidak valid' },
+    });
   });
 
-  it('memangkas spasi pada endpoint', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
-    vi.stubGlobal('fetch', fetchMock);
-    const { sendContactMessage } = await load('  /api/contact  ');
-
-    await sendContactMessage(payload);
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/contact');
-  });
-
-  it.each([400, 429, 500, 503])('respons HTTP %i dilempar sebagai error', async (status) => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status }));
-    const { sendContactMessage } = await load('/api/contact');
-    await expect(sendContactMessage(payload)).rejects.toThrow(`HTTP ${status}`);
-  });
-
-  it('kegagalan jaringan diteruskan sebagai error', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
-    const { sendContactMessage } = await load('/api/contact');
-    await expect(sendContactMessage(payload)).rejects.toThrow('Failed to fetch');
+  it('kegagalan jaringan menjadi ApiError berstatus 0', async () => {
+    server.use(http.post('/api/contact', () => HttpResponse.error()));
+    await expect(sendContactMessage(payload, { token: 't', honeypot: '' })).rejects.toMatchObject({
+      status: 0,
+    });
   });
 });

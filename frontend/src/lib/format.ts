@@ -1,10 +1,13 @@
-/** Memformat tanggal ISO (YYYY-MM-DD) ke gaya Indonesia, mis. "24 Januari 2025". */
+/**
+ * Memformat tanggal ISO (YYYY-MM-DD atau waktu lengkap) ke gaya Indonesia menurut WIB,
+ * mis. "24 Januari 2025". Waktu terbit 00.30 WIB tetap tercatat di tanggal WIB-nya.
+ */
 export function formatDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString('id-ID', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    timeZone: 'UTC',
+    timeZone: 'Asia/Jakarta',
   });
 }
 

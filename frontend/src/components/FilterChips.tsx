@@ -2,8 +2,10 @@ interface FilterChipsProps<T extends string> {
   /** Nama grup untuk pembaca layar, mis. "Filter status". */
   label: string;
   options: { label: string; value: T }[];
+  /** Nilai yang tidak ada di `options` berarti tidak ada chip yang aktif. */
   selected: T;
   onSelect: (value: T) => void;
+  size?: 'small' | 'medium';
 }
 
 /**
@@ -16,6 +18,7 @@ export default function FilterChips<T extends string>({
   options,
   selected,
   onSelect,
+  size = 'small',
 }: FilterChipsProps<T>) {
   return (
     <div role="group" aria-label={label} className="ina-chip">
@@ -28,7 +31,7 @@ export default function FilterChips<T extends string>({
               type="button"
               aria-pressed={active}
               onClick={() => onSelect(option.value)}
-              className={`ina-chip__item ina-chip__item--size-small ina-chip__item--variant-outline ${
+              className={`ina-chip__item ina-chip__item--size-${size} ina-chip__item--variant-outline ${
                 active
                   ? 'ina-chip__item--selected !border-primary-600 !bg-primary-50 !text-primary-600'
                   : ''

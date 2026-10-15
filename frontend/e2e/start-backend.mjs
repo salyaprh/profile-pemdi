@@ -27,6 +27,8 @@ const env = {
   APP_ENV: 'local',
   APP_DEBUG: 'false',
   APP_KEY: `base64:${randomBytes(32).toString('base64')}`,
+  // URL situs publik (sama dengan VITE_SITE_URL di e2e/start.mjs): dipakai untuk sitemap.xml.
+  APP_URL: 'https://pemdi.example.go.id',
   DB_CONNECTION: 'sqlite',
   DB_DATABASE: database,
   // File, bukan database: banyak worker Playwright menulis sesi bersamaan.
@@ -37,6 +39,12 @@ const env = {
   LOG_LEVEL: 'warning',
   DEMO_USER_PASSWORD: process.env.E2E_DEMO_PASSWORD,
   MEDIA_DIRECTORY: mediaDirectory,
+  // Banyak uji mengirim formulir kontak dari IP yang sama dan secepat robot; batas laju dan jebakan
+  // waktu diuji di PHPUnit (tests/Feature/ContactMessageTest.php).
+  CONTACT_RATE_LIMIT: '1000',
+  // Semua worker Playwright memakai satu IP; batas laju API publik diuji di PHPUnit.
+  PUBLIC_API_RATE_LIMIT: '100000',
+  CONTACT_MIN_SECONDS: '0',
   // Server bawaan PHP melayani satu permintaan sekaligus tanpa ini.
   PHP_CLI_SERVER_WORKERS: '4',
 };

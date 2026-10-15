@@ -9,7 +9,8 @@ Situs profil PEMDI / PANRB (Pemerintah Digital) yang menampilkan karya dan inisi
 - [`@idds/react`](https://design.inadigital.go.id/getting-started/code/react/) untuk komponen, `@tabler/icons-react` untuk ikon
 - Font Inter di-self-host lewat `@fontsource/inter` (tanpa Google Fonts)
 - Router kecil buatan sendiri berbasis History API (`src/lib/router.tsx`), tanpa dependency tambahan
-- Panel admin CMS (`src/admin/`): dimuat terpisah dengan `React.lazy`, data dari API memakai TanStack Query
+- Data dari API Laravel (artikel, kategori, kontak) memakai TanStack Query; tidak ada lagi konten yang ditulis di kode
+- Panel admin CMS (`src/admin/`): dimuat terpisah dengan `React.lazy`
 - Editor WYSIWYG [TipTap 3](https://tiptap.dev/) (MIT), hanya di bundle admin
 
 ## Menjalankan
@@ -29,14 +30,14 @@ npm test               # Vitest: uji unit dan komponen (test:watch, test:coverag
 npm run test:e2e       # Playwright: build produksi + backend Laravel (butuh PHP 8.3+, composer install di ../backend, dan npx playwright install chromium)
 ```
 
-Panel admin (`/admin`) butuh backend berjalan: lihat [README backend](../backend/README.md). Atur `BACKEND_URL` bila backend tidak di port 8000.
+Situs publik dan panel admin sama-sama butuh backend berjalan (`composer dev`, lihat [README backend](../backend/README.md)): semua konten diambil dari API. Atur `BACKEND_URL` bila backend tidak di port 8000.
 
 ## Pengujian
 
-| Lapisan         | Alat                                    | Cakupan                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| --------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Unit & komponen | Vitest + Testing Library + jsdom + MSW  | Logika (validator, data, router, SEO), komponen dan halaman dengan komponen IDDS asli (tidak di-mock), klien API (CSRF, 419, 422, galat jaringan) dan panel admin terhadap API tiruan MSW, serta invarian keamanan: CSP di `public/_headers` tanpa `unsafe-inline`/host eksternal, hash style IDDS dihitung dari paket terpasang, dan CSP Nginx identik dengan `_headers`                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| End-to-end      | Playwright (Chromium, desktop + mobile) | Build produksi dilayani dengan header dari `_headers`, dan `/api` diteruskan ke backend Laravel sungguhan dengan database SQLite sementara (`e2e/start-backend.mjs`). Setiap uji otomatis gagal bila ada error konsol, pelanggaran CSP, atau permintaan ke origin lain. Mencakup routing, pencarian, formulir (sukses, 500, jaringan putus, klik ganda), login/logout dan sesi admin (cookie HttpOnly, CSRF 419), alur artikel lengkap (Penulis menulis dengan editor, tautan, dan gambar unggahan lalu mengajukan; Admin mengembalikan dengan catatan lalu menerbitkan; HTML tersimpan diperiksa hasil penyaring server), konfirmasi perubahan belum disimpan, toolbar editor dengan keyboard, CRUD kategori dan penolakan 403 untuk Penulis, layout, SEO, keamanan, dan audit aksesibilitas axe WCAG 2.2 AA pada semua halaman dan status interaktif |
+| Lapisan         | Alat                                    | Cakupan                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| --------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit & komponen | Vitest + Testing Library + jsdom + MSW  | Logika (validator, data, router, SEO), komponen dan halaman dengan komponen IDDS asli (tidak di-mock), klien API (CSRF, 419, 422, galat jaringan) dan panel admin terhadap API tiruan MSW, serta invarian keamanan: CSP di `public/_headers` tanpa `unsafe-inline`/host eksternal, hash style IDDS dihitung dari paket terpasang, dan CSP Nginx identik dengan `_headers`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| End-to-end      | Playwright (Chromium, desktop + mobile) | Build produksi dilayani dengan header dari `_headers`, dan `/api` diteruskan ke backend Laravel sungguhan dengan database SQLite sementara (`e2e/start-backend.mjs`). Setiap uji otomatis gagal bila ada error konsol, pelanggaran CSP, atau permintaan ke origin lain. Mencakup routing, pencarian, formulir (sukses, 500, jaringan putus, klik ganda), login/logout dan sesi admin (cookie HttpOnly, CSRF 419), alur artikel lengkap (Penulis menulis dengan editor, tautan, dan gambar unggahan lalu mengajukan; Admin mengembalikan dengan catatan lalu menerbitkan; HTML tersimpan diperiksa hasil penyaring server), konfirmasi perubahan belum disimpan, toolbar editor dengan keyboard, CRUD kategori dan penolakan 403 untuk Penulis, artikel terbit langsung tampil di situs publik, formulir kontak tersimpan di server lalu dibaca dan dihapus di kotak masuk Admin, API publik tanpa cookie, sitemap dari backend, layout, SEO, keamanan, dan audit aksesibilitas axe WCAG 2.2 AA pada semua halaman dan status interaktif |
 
 Uji ditulis agar dapat gagal: kualitasnya diperiksa dengan uji mutasi manual (menyisipkan bug yang masuk akal, lalu memastikan uji menangkapnya).
 
@@ -46,18 +47,19 @@ CI (`../.github/workflows/ci.yml`) menjalankan dua job frontend pada setiap PR: 
 
 ## Rute
 
-| Path                                        | Halaman                                                                                      |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `/`                                         | Beranda                                                                                      |
-| `/portfolio`                                | Daftar portofolio. Filter dan halaman tersimpan di URL: `?kategori=Layanan+Publik&halaman=2` |
-| `/portfolio/:id`                            | Detail artikel + artikel terkait                                                             |
-| `/contact`                                  | Formulir "Hubungi kami"                                                                      |
-| `/admin/masuk`                              | Halaman Masuk CMS (`noindex`)                                                                |
-| `/admin`                                    | Dasbor CMS (perlu login; tamu diarahkan ke halaman Masuk dengan `?kembali=`)                 |
-| `/admin/artikel`                            | Daftar artikel. Filter di URL: `?status=ditinjau&kategori=1&cari=spbe&halaman=2`             |
-| `/admin/artikel/baru`, `/admin/artikel/:id` | Tulis/edit artikel (editor WYSIWYG, gambar sampul, tombol alur tinjauan)                     |
-| `/admin/kategori`                           | Kelola kategori (khusus Admin; Penulis melihat pemberitahuan "khusus Admin")                 |
-| lainnya                                     | Halaman 404 (`noindex`)                                                                      |
+| Path                                        | Halaman                                                                                            |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `/`                                         | Beranda                                                                                            |
+| `/portfolio`                                | Daftar portofolio. Filter (slug kategori) dan halaman di URL: `?kategori=layanan-publik&halaman=2` |
+| `/portfolio/:slug`                          | Detail artikel + artikel terkait (404 bila tidak ada atau belum terbit)                            |
+| `/contact`                                  | Formulir "Hubungi kami"                                                                            |
+| `/admin/masuk`                              | Halaman Masuk CMS (`noindex`)                                                                      |
+| `/admin`                                    | Dasbor CMS (perlu login; tamu diarahkan ke halaman Masuk dengan `?kembali=`)                       |
+| `/admin/artikel`                            | Daftar artikel. Filter di URL: `?status=ditinjau&kategori=1&cari=spbe&halaman=2`                   |
+| `/admin/artikel/baru`, `/admin/artikel/:id` | Tulis/edit artikel (editor WYSIWYG, gambar sampul, tombol alur tinjauan)                           |
+| `/admin/pesan`, `/admin/pesan/:id`          | Kotak masuk formulir Hubungi kami (khusus Admin)                                                   |
+| `/admin/kategori`                           | Kelola kategori (khusus Admin; Penulis melihat pemberitahuan "khusus Admin")                       |
+| lainnya                                     | Halaman 404 (`noindex`)                                                                            |
 
 ## Struktur
 
@@ -68,17 +70,18 @@ src/
   index.css           Tailwind, token IDDS, skala tipografi IDDS
   components/         Header, Footer, SearchBar, PaginationNav, ArticleCard, ButtonLink, EmptyState, ErrorBoundary, Layout
   pages/              Home, Articles (portofolio), ArticleDetail, Contact, NotFound
-  data/               articlesData.ts (data dummy + helper), siteContent.ts (menu, footer, statistik)
+  data/               siteContent.ts (menu, deskripsi situs, statistik beranda; dipindah ke Pengaturan di Fase 4)
   lib/                router.tsx, seo.ts (title/meta per halaman), validators.ts, format.ts
-  services/           api.ts (klien API: sesi cookie + CSRF, pesan galat), contact.ts (pengiriman formulir)
+  services/           api.ts (klien API: sesi cookie + CSRF, pesan galat), content.ts (kontrak + hook API publik),
+                      contact.ts (formulir kontak), queryClient.ts
   admin/              panel CMS: AdminApp (rute admin + penjaga peran), AdminLayout (sidebar), RequireAuth,
                       auth (sesi), navigation (menu per peran), useUnsavedChangesGuard,
                       pages/ (Masuk, Dasbor, Artikel, Editor artikel, Kategori, 403/404 admin),
                       articles/ (tipe + hook TanStack Query + unggah gambar), editor/ (RichTextEditor,
                       EditorToolbar, LinkDialog, ImageDialog, links.ts), components/ (ConfirmDialog,
                       FilterChips, ImageFileInput, CoverImageField, StatusBadge, useDialogInitialFocus)
-  test/               setup Vitest, server.ts (MSW), utils.tsx
-vite-plugins/         selfHostFonts.ts (buang @import Google Fonts dari CSS IDDS), seo.ts (robots.txt + sitemap.xml)
+  test/               setup Vitest, server.ts (MSW), publicApi.ts (API publik tiruan bawaan), utils.tsx
+vite-plugins/         selfHostFonts.ts (buang @import Google Fonts dari CSS IDDS), seo.ts (robots.txt)
 public/               panrb.svg, images/articles/*, _headers (header keamanan + cache)
 ../deploy/            nginx.conf.example (hosting sendiri/PDN)
 ../.github/           ci.yml, dependabot.yml
@@ -88,26 +91,19 @@ public/               panrb.svg, images/articles/*, _headers (header keamanan + 
 
 Salin `.env.example` menjadi `.env.local`. Semua variabel `VITE_*` **tertanam di bundle dan bersifat publik**: jangan menyimpan secret (API key, token) di sini.
 
-| Variabel                | Fungsi                                                                                                                                                                    |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_SITE_URL`         | URL produksi tanpa path (mis. `https://pemdi.panrb.go.id`). Mengaktifkan `canonical`, `og:url`, dan `sitemap.xml`. Atur di environment build **Production** hosting Anda. |
-| `VITE_CONTACT_ENDPOINT` | Endpoint `POST` JSON penerima pesan formulir kontak.                                                                                                                      |
+| Variabel        | Fungsi                                                                                                                                                                                    |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_SITE_URL` | URL produksi tanpa path (mis. `https://pemdi.panrb.go.id`). Mengaktifkan `canonical`, `og:url`, dan baris Sitemap di `robots.txt`. Atur di environment build **Production** hosting Anda. |
 
 ### Formulir kontak
 
-Formulir **belum terhubung ke server**. `POST` ke `VITE_CONTACT_ENDPOINT` dengan JSON:
-
-```json
-{ "name": "", "email": "", "phone": "", "subject": "", "message": "" }
-```
-
-Selama variabel ini kosong, pengguna melihat pemberitahuan bahwa pesan belum dikirim (tidak berpura-pura terkirim). Respons non-2xx atau kegagalan jaringan menampilkan pesan gagal.
-
-Gunakan endpoint **se-origin** (mis. `/api/contact`) agar CSP `connect-src 'self'` tidak perlu dilonggarkan. Endpoint wajib melakukan validasi di sisi server, pembatasan laju (rate limit), dan anti-spam; validasi di browser hanya untuk kenyamanan pengguna.
+Formulir mengirim `POST /api/contact` ke backend (se-origin, tanpa sesi dan tanpa cookie) beserta token waktu dari `/api/contact/token` dan kolom jebakan bot yang tersembunyi. Aturan validasi di browser (`src/lib/validators.ts`) sama dengan di server dan diuji dengan kasus bersama (`src/lib/contact-validation-cases.json`). Galat 422 dari server ditampilkan di kolomnya; 429 dan gangguan jaringan ditampilkan sebagai toast. Pesan masuk dibaca Admin di `/admin/pesan`.
 
 ## Deploy
 
-Hasil build adalah situs statis (`dist/`). Persyaratan hosting:
+> **Sejak Fase 3 situs publik membutuhkan backend Laravel di origin yang sama** (artikel, kategori, formulir kontak, `sitemap.xml`). Hosting statis saja (Cloudflare Pages, Netlify, Vercel) tidak lagi cukup; konfigurasi Nginx lengkap untuk server PANRB disusun di Fase 5. Tabel di bawah hanya berlaku untuk bagian statisnya.
+
+Hasil build adalah berkas statis (`dist/`). Persyaratan hosting:
 
 1. **SPA fallback**: path tak dikenal harus dilayani `index.html`.
 2. **Header keamanan** dari `public/_headers` (CSP ketat, HSTS, `nosniff`, `frame-ancestors 'none'`, dll.) dan cache panjang untuk `/assets/*`.
@@ -128,7 +124,7 @@ Catatan:
 ## SEO dan pratinjau tautan
 
 - `<title>`, deskripsi, `canonical`, dan `og:*` per halaman diatur `src/lib/seo.ts` di browser. Mesin pencari yang menjalankan JavaScript membacanya.
-- `robots.txt` dan `sitemap.xml` dibuat saat build (`sitemap.xml` hanya bila `VITE_SITE_URL` diisi).
+- `robots.txt` dibuat saat build (baris Sitemap hanya bila `VITE_SITE_URL` diisi). `sitemap.xml` dibuat backend dari artikel terbit di database, jadi artikel baru langsung masuk tanpa build ulang.
 - **Keterbatasan:** pratinjau tautan (WhatsApp, dll.) tidak menjalankan JavaScript sehingga hanya melihat meta statis di `index.html`. Pratinjau per artikel dan `og:image` membutuhkan prerender/SSG dan aset gambar 1200×630 resmi.
 
 ## Acuan desain
@@ -159,15 +155,16 @@ Beberapa komponen IDDS (`@idds/react` 1.6.x) tidak lolos WCAG 2.2 AA yang diacu 
 | `Alert`                  | sudah ber-`role="alert"`: jangan dibungkus elemen ber-role sama (dibacakan dua kali)                                        | dipakai apa adanya                                                                                             |
 | `Modal`                  | memfokuskan wadah dialog sekitar 85 ms setelah dibuka, sehingga `autoFocus` di dalamnya tertimpa dan ketikan awal terpotong | `useDialogInitialFocus` memindahkan fokus ke isian pertama (atau "Batal" pada konfirmasi hapus) setelah 150 ms |
 | `Chip`                   | chip yang aktif tidak diberi `aria-pressed`, jadi pembaca layar tidak tahu filter mana yang dipilih (WCAG 4.1.2)            | `FilterChips`: tombol toggle sendiri dengan kelas CSS `ina-chip` dan `aria-pressed`                            |
+| `Card`                   | `mediaAlt=""` diganti alt "Card media", sehingga pembaca layar membacakannya di awal setiap tautan kartu                    | `ArticleCard` menulis markup Card IDDS sendiri dengan `alt=""` dan `loading="lazy"`                            |
 | `SingleFileUpload`       | pratinjau memakai URL `blob:` yang diblokir CSP `img-src 'self'`                                                            | `ImageFileInput`: `<input type="file">` asli; pratinjau memakai URL hasil unggahan di server                   |
 
-Catatan: `Card` IDDS sudah membungkus `title` dalam `<h3>` dan `description` dalam `<p>`, jadi isi keduanya dengan `<span>`.
+Catatan: `Card` IDDS membungkus `title` dalam `<h3>` dan `description` dalam `<p>`. `ArticleCard` menulis markup itu langsung dengan kelas CSS `ina-card` (lihat tabel di atas).
 
 ### Editor artikel
 
 - Toolbar mengikuti pola [WAI-ARIA Toolbar](https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/): satu tab stop, panah kiri/kanan dan Home/End berpindah antar tombol, `aria-pressed` untuk format, dan tombol yang belum tersedia memakai `aria-disabled` (bukan `disabled`) agar tetap bisa difokus.
 - Elemen yang bisa dibuat editor sama persis dengan yang diizinkan penyaring backend (`ArticleHtmlSanitizer`); HTML yang tersimpan selalu hasil saringan server.
-- CSP melarang `<style>` sisipan, jadi TipTap dijalankan dengan `injectCSS: false` dan CSS ProseMirror yang dibutuhkan ada di `src/index.css`. Tipografi isi artikel memakai kelas `.article-body` (dipakai juga untuk halaman publik di Fase 3).
+- CSP melarang `<style>` sisipan, jadi TipTap dijalankan dengan `injectCSS: false` dan CSS ProseMirror yang dibutuhkan ada di `src/index.css`. Tipografi isi artikel memakai kelas `.article-body`, yang sama di editor dan di halaman detail artikel publik.
 - Gambar wajib diberi teks alternatif. Tautan hanya `https://`, `mailto:`, atau path situs ini.
 
 ## Aset
@@ -177,6 +174,6 @@ Catatan: `Card` IDDS sudah membungkus `title` dalam `<h3>` dan `description` dal
 
 ## Data yang masih placeholder
 
-- 36 artikel di `src/data/articlesData.ts` adalah data dummy; isi detail semua artikel masih memakai `placeholderContent` (isi `content` per artikel dari CMS/API).
+- 36 artikel dan 3 kategori dari seeder backend (`../backend/database/seeders/data/placeholder-content.json`) masih placeholder; ganti lewat CMS.
 - Angka statistik di beranda (`heroStats` di `src/data/siteContent.ts`) belum data resmi.
 - Tautan media sosial di footer belum ada (URL resmi belum diketahui).

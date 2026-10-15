@@ -1,8 +1,8 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { navigationItems } from '../data/siteContent';
-import { setUrl } from '../test/utils';
+import { renderPublic as render, setUrl } from '../test/utils';
 import Header from './Header';
 
 const mainNav = () => screen.getByRole('navigation', { name: 'Navigasi utama' });

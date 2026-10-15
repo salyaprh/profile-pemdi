@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ActivityLogResource;
 use App\Models\ActivityLog;
 use App\Models\Article;
+use App\Models\ContactMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -35,12 +36,16 @@ class DashboardController extends Controller
             ? ActivityLog::with('user')->latest('created_at')->latest('id')->limit(self::RECENT_ACTIVITY_LIMIT)->get()
             : collect();
 
+        $metrics = [
+            'published' => (int) ($counts[ArticleStatus::Terbit->value] ?? 0),
+            'in_review' => (int) ($counts[ArticleStatus::Ditinjau->value] ?? 0),
+            'draft' => (int) ($counts[ArticleStatus::Draf->value] ?? 0),
+        ];
+
         return response()->json([
-            'metrics' => [
-                'published' => (int) ($counts[ArticleStatus::Terbit->value] ?? 0),
-                'in_review' => (int) ($counts[ArticleStatus::Ditinjau->value] ?? 0),
-                'draft' => (int) ($counts[ArticleStatus::Draf->value] ?? 0),
-            ],
+            'metrics' => $metrics,
+            // Kotak masuk pesan khusus Admin.
+            ...($user->isAdmin() ? ['unread_messages' => ContactMessage::query()->whereNull('read_at')->count()] : []),
             'recent_activity' => ActivityLogResource::collection($recentActivity)->resolve($request),
         ]);
     }

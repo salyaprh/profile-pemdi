@@ -9,7 +9,7 @@ import { useMemo, useSyncExternalStore, type AnchorHTMLAttributes, type MouseEve
 export const paths = {
   home: '/',
   portfolio: '/portfolio',
-  article: (id: string) => `/portfolio/${encodeURIComponent(id)}`,
+  article: (slug: string) => `/portfolio/${encodeURIComponent(slug)}`,
   contact: '/contact',
   admin: '/admin',
   adminLogin: '/admin/masuk',
@@ -17,7 +17,18 @@ export const paths = {
   adminArticleNew: '/admin/artikel/baru',
   adminArticle: (id: number) => `/admin/artikel/${id}`,
   adminCategories: '/admin/kategori',
+  adminMessages: '/admin/pesan',
+  adminMessage: (id: number) => `/admin/pesan/${id}`,
 } as const;
+
+/** URL daftar portofolio dengan filter kategori (slug) dan halaman, mis. ?kategori=layanan-publik&halaman=2. */
+export function portfolioUrl(category: string | null, page = 1): string {
+  const params = new URLSearchParams();
+  if (category) params.set('kategori', category);
+  if (page > 1) params.set('halaman', String(page));
+  const query = params.toString();
+  return query ? `${paths.portfolio}?${query}` : paths.portfolio;
+}
 
 /** Semua path di bawah /admin milik panel CMS (dimuat terpisah, tanpa header/footer situs). */
 export function isAdminPath(pathname: string): boolean {
@@ -100,7 +111,10 @@ interface LinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'
 export function Link({ to, onClick, onNavigate, children, ...rest }: LinkProps) {
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(event);
+    // Tautan keluar aplikasi (mailto:, tel:, situs lain) dibiarkan ditangani browser.
+    const external = !to.startsWith('/') || to.startsWith('//');
     const opensElsewhere =
+      external ||
       event.button !== 0 ||
       event.metaKey ||
       event.ctrlKey ||

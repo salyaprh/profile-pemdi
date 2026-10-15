@@ -47,13 +47,30 @@ Kata sandi ditanyakan secara tersembunyi (tidak lewat argumen, agar tidak tersim
 
 ## API
 
+### Situs publik (tanpa sesi)
+
+Rute di `routes/public.php` memakai grup middleware `api`: tanpa sesi, tanpa cookie, dan tanpa CSRF, jadi pengunjung situs tidak pernah mendapat cookie. Hanya artikel berstatus terbit (dan tanggal terbitnya sudah lewat) yang keluar dari sini; email penulis, status, dan catatan tinjauan tidak pernah ikut. Kontraknya ada di `../frontend/src/services/content.ts`.
+
+| Metode | Path                   | Fungsi                                                                                                                                                              |
+| ------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/articles`        | `{ data, meta }`, terbaru lebih dulu. `?kategori=<slug>&cari=<kata>&page=<n>&per_page=<1–24>` (bawaan 12). Pencarian di judul dan ringkasan, tidak peka huruf besar |
+| GET    | `/api/articles/{slug}` | `{ data, related }`: artikel beserta `body_html`, `source`, `reading_minutes`, dan maksimal 3 artikel terbit sekategori. 404 bila tidak ada atau belum terbit       |
+| GET    | `/api/categories`      | Kategori yang punya artikel terbit, dengan jumlahnya                                                                                                                |
+| GET    | `/api/contact/token`   | `{ token }`: waktu formulir kontak dibuka, terenkripsi                                                                                                              |
+| POST   | `/api/contact`         | Pesan formulir "Hubungi kami" → 202. Lihat [Formulir kontak](#formulir-kontak)                                                                                      |
+| GET    | `/sitemap.xml`         | Halaman statis + semua artikel terbit, URL absolut dari `APP_URL` (di produksi wajib alamat situs)                                                                  |
+
+Respons GET publik memakai `Cache-Control: no-cache, public` + `ETag`: browser selalu memeriksa ulang (artikel yang baru terbit langsung terlihat), dan respons yang tidak berubah dijawab 304. Batasnya 120 permintaan per IP per menit (`PUBLIC_API_RATE_LIMIT`). CORS dimatikan (`config/cors.php`) karena semua permintaan datang dari origin yang sama.
+
+### Panel admin (sesi + CSRF)
+
 | Metode | Path                                 | Akses           | Fungsi                                                                                                         |
 | ------ | ------------------------------------ | --------------- | -------------------------------------------------------------------------------------------------------------- |
 | GET    | `/api/csrf`                          | semua           | Memasang cookie `XSRF-TOKEN` (204)                                                                             |
 | GET    | `/api/auth/me`                       | semua           | `{ user }` pengguna yang login, atau `{ user: null }`                                                          |
 | POST   | `/api/auth/login`                    | semua           | `{ email, password }` → `{ user }`; 422 bila salah, 429 bila dikunci                                           |
 | POST   | `/api/auth/logout`                   | login           | 204                                                                                                            |
-| GET    | `/api/admin/dashboard`               | login dan aktif | Jumlah artikel per status; aktivitas terbaru (khusus Admin)                                                    |
+| GET    | `/api/admin/dashboard`               | login dan aktif | Jumlah artikel per status; khusus Admin: aktivitas terbaru dan `unread_messages`                               |
 | GET    | `/api/admin/articles`                | login dan aktif | Daftar, 15 per halaman. Filter `?status=draf\|ditinjau\|terbit\|sampah&kategori=&cari=&page=`                  |
 | POST   | `/api/admin/articles`                | login dan aktif | Membuat draf. Slug dibuat dari judul bila kosong                                                               |
 | GET    | `/api/admin/articles/{id}`           | pemilik / Admin | Detail beserta `body_html` dan `can` (aksi yang diizinkan untuk pengguna ini)                                  |
@@ -67,14 +84,26 @@ Kata sandi ditanyakan secara tersembunyi (tidak lewat argumen, agar tidak tersim
 | PUT    | `/api/admin/categories/{id}`         | Admin           | Ganti nama                                                                                                     |
 | DELETE | `/api/admin/categories/{id}`         | Admin           | 409 bila masih dipakai artikel                                                                                 |
 | POST   | `/api/admin/media`                   | login dan aktif | Unggah gambar (`multipart/form-data`, kolom `file`) → `{ data: { url, og_url, width, height } }`; 30 per menit |
+| GET    | `/api/admin/messages`                | Admin           | Kotak masuk, 20 per halaman, terbaru lebih dulu. `?status=belum-dibaca&page=`; potongan isi saja               |
+| GET    | `/api/admin/messages/{id}`           | Admin           | Detail pesan (termasuk ponsel dan isi lengkap). Tidak otomatis menandai dibaca                                 |
+| PATCH  | `/api/admin/messages/{id}`           | Admin           | `{ read: boolean }`: tandai sudah/belum dibaca                                                                 |
+| DELETE | `/api/admin/messages/{id}`           | Admin           | Hapus permanen; log aktivitas hanya mencatat nomor pesan                                                       |
 
 Galat dikembalikan sebagai JSON (`message`, dan `errors` per kolom untuk 422). Aksi yang tidak diizinkan dijawab 403 dengan pesan berbahasa Indonesia.
 
 ## Isi artikel dan unggahan gambar
 
-- **Penyaring HTML** (`app/Support/ArticleHtmlSanitizer.php`, symfony/html-sanitizer). Isi artikel disaring di server setiap kali disimpan, apa pun yang dikirim browser. Hanya elemen yang bisa dibuat toolbar editor yang diizinkan: `p h2 h3 strong em u s ul ol li blockquote br hr a img`. Tautan hanya `http(s)`, `mailto`, dan path situs ini (tautan `//host` ditolak), selalu diberi `rel="noopener noreferrer"`. Gambar hanya dari folder unggahan sendiri (`/storage/<MEDIA_DIRECTORY>/<uuid>.webp`). Elemen lain dibuang beserta isinya bila berbahaya (`script`, `style`, `iframe`, …) atau dibuka (teksnya dipertahankan) bila hanya format. Diuji dengan korpus payload XSS di `tests/Unit/ArticleHtmlSanitizerTest.php`.
+- **Penyaring HTML** (`app/Support/ArticleHtmlSanitizer.php`, symfony/html-sanitizer). Isi artikel disaring di server setiap kali disimpan, apa pun yang dikirim browser. Hanya elemen yang bisa dibuat toolbar editor yang diizinkan: `p h2 h3 strong em u s ul ol li blockquote br hr a img`. Tautan hanya `http(s)`, `mailto`, dan path situs ini (tautan `//host` ditolak), selalu diberi `rel="noopener noreferrer"`. Gambar hanya dari folder unggahan sendiri (`/storage/<MEDIA_DIRECTORY>/<uuid>.webp`). Elemen lain dibuang beserta isinya bila berbahaya (`script`, `style`, `iframe`, …) atau dibuka (teksnya dipertahankan) bila hanya format. Diuji dengan korpus payload XSS di `tests/Feature/ArticleHtmlSanitizerTest.php`.
 - **Unggah gambar** (`app/Support/MediaStorage.php`, Intervention Image dengan GD). Hanya JPEG, PNG, atau WebP, 200–8000 px, maksimal 5 MB; SVG ditolak. Setiap gambar di-encode ulang menjadi WebP (kualitas 82, metadata EXIF dibuang), diperkecil sampai lebar 1600 px, dan dibuat varian 1200×630 (`-og.webp`) untuk pratinjau tautan. Proses ini juga menetralkan berkas _polyglot_ (gambar yang disisipi kode). Nama berkas diacak (UUID).
 - Berkas disimpan di disk `public` (`storage/app/public/<MEDIA_DIRECTORY>`, bawaan `media`) dan dibuka lewat `/storage/...` setelah `php artisan storage:link`. Di Nginx, folder `/storage/` wajib dilayani sebagai berkas statis tanpa eksekusi PHP.
+
+## Formulir kontak
+
+- **Data pribadi terenkripsi.** Nama, email, ponsel, subjek, dan isi pesan disimpan dengan cast `encrypted` (AES-256 dengan `APP_KEY`). Alamat IP tidak disimpan. Akibatnya: **`APP_KEY` wajib dicadangkan**; tanpa kunci itu pesan lama tidak bisa dibaca. Saat mengganti kunci, pindahkan kunci lama ke `APP_PREVIOUS_KEYS`.
+- **Masa simpan.** Pesan dihapus otomatis setelah 12 bulan (`CONTACT_RETENTION_MONTHS`) oleh `model:prune` yang dijadwalkan harian di `routes/console.php`. Butuh cron di server: `* * * * * cd /path/backend && php artisan schedule:run >> /dev/null 2>&1`.
+- **Anti-spam tanpa CAPTCHA.** Batas 5 pesan per IP per 10 menit (`CONTACT_RATE_LIMIT`); kolom jebakan `kolom_khusus` yang tersembunyi dari pengguna; dan token waktu dari `/api/contact/token`. Pesan yang mengisi kolom jebakan atau dikirim kurang dari 3 detik setelah formulir dibuka (`CONTACT_MIN_SECONDS`) dijawab 202 seperti biasa tetapi tidak disimpan. Token yang dipalsukan atau berumur lebih dari 2 jam ditolak 422.
+- **Aturan validasi sama dengan frontend.** `app/Http/Requests/ContactMessageRequest.php` dan `../frontend/src/lib/validators.ts` diuji dengan kasus yang sama (`../frontend/src/lib/contact-validation-cases.json`, lihat `tests/Feature/ContactValidationParityTest.php`), termasuk pesan galatnya.
+- Di balik reverse proxy, batas per IP hanya benar bila proxy dipercaya (`TrustProxies`); dengan Nginx + PHP-FPM langsung, `REMOTE_ADDR` sudah IP pengunjung.
 
 ## Perintah
 
@@ -85,6 +114,8 @@ Galat dikembalikan sebagai JSON (`message`, dan `errors` per kolom untuk 422). A
 | `composer format`  | Rapikan gaya kode dengan Pint              |
 | `composer analyse` | Analisis statis Larastan (PHPStan level 6) |
 | `composer audit`   | Cek kerentanan dependency                  |
+
+Jadwal (`php artisan schedule:list`): `model:prune` harian untuk pesan kontak lama.
 
 Semua perintah di atas dijalankan CI pada PHP 8.3 (versi minimum) dan versi terbaru. Uji e2e di `../frontend` juga menyalakan backend ini dengan database SQLite sementara dan folder unggahan terpisah `media-e2e` (`../frontend/e2e/start-backend.mjs`).
 

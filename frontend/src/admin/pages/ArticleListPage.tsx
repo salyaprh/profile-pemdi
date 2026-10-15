@@ -7,10 +7,10 @@ import PaginationNav from '../../components/PaginationNav';
 import { formatDateTime } from '../../lib/format';
 import { Link, navigate, paths, useLocation } from '../../lib/router';
 import { usePageMeta } from '../../lib/seo';
+import FilterChips from '../../components/FilterChips';
 import { useArticles, useCategories } from '../articles/api';
 import type { ArticleListFilters, ArticleStatusFilter } from '../articles/types';
 import { useAuthenticatedUser } from '../auth';
-import FilterChips from '../components/FilterChips';
 import StatusBadge from '../components/StatusBadge';
 
 const statusOptions: {

@@ -1,3 +1,5 @@
+import { apiRequest } from './api';
+
 export interface ContactMessage {
   name: string;
   email: string;
@@ -7,31 +9,31 @@ export interface ContactMessage {
 }
 
 /**
- * - `sent`           : pesan diterima endpoint.
- * - `not-configured` : `VITE_CONTACT_ENDPOINT` belum diisi, pesan TIDAK dikirim.
+ * Nama kolom jebakan bot (honeypot). Kolom ini disembunyikan dari pengguna dan pembaca layar;
+ * pesan yang mengisinya dianggap dari bot dan diabaikan server (tetap dijawab "diterima").
  */
-export type SendResult = 'sent' | 'not-configured';
+export const HONEYPOT_FIELD = 'kolom_khusus';
 
-const endpoint = import.meta.env.VITE_CONTACT_ENDPOINT?.trim();
+/**
+ * Token formulir dari server (waktu formulir dibuka, terenkripsi). Pesan yang dikirim terlalu cepat
+ * setelah formulir dibuka diabaikan, dan token yang kedaluwarsa (lebih dari 2 jam) ditolak 422.
+ */
+export async function fetchContactToken(signal?: AbortSignal): Promise<string> {
+  const { token } = await apiRequest<{ token: string }>('/api/contact/token', { signal });
+  return token;
+}
 
-export async function sendContactMessage(payload: ContactMessage): Promise<SendResult> {
-  if (!endpoint) {
-    if (import.meta.env.DEV) {
-      console.warn(
-        '[contact] VITE_CONTACT_ENDPOINT belum diset (lihat .env.example); pesan tidak dikirim.',
-      );
-    }
-    return 'not-configured';
-  }
-
-  const response = await fetch(endpoint, {
+/**
+ * POST /api/contact (tanpa sesi dan tanpa cookie). 202 bila diterima; 422 berisi galat per kolom
+ * (aturan sama dengan src/lib/validators.ts) atau `token` kedaluwarsa; 429 bila terlalu sering.
+ */
+export async function sendContactMessage(
+  message: ContactMessage,
+  { token, honeypot }: { token: string; honeypot: string },
+): Promise<void> {
+  await apiRequest('/api/contact', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: { ...message, token, [HONEYPOT_FIELD]: honeypot },
+    csrf: false,
   });
-
-  if (!response.ok) {
-    throw new Error(`Gagal mengirim pesan (HTTP ${response.status})`);
-  }
-  return 'sent';
 }

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useState, type ReactElement } from 'react';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { paths, useLocation } from '../lib/router';
 import AdminLayout from './AdminLayout';
@@ -9,6 +9,8 @@ import ArticleListPage from './pages/ArticleListPage';
 import CategoriesPage from './pages/CategoriesPage';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
+import MessageDetailPage from './pages/MessageDetailPage';
+import MessagesPage from './pages/MessagesPage';
 import { createAdminQueryClient } from './queryClient';
 import RequireAuth from './RequireAuth';
 
@@ -38,8 +40,17 @@ function AdminRoute({ pathname }: { pathname: string }) {
     );
   }
 
-  if (pathname === paths.adminCategories) {
-    return user.role === 'admin' ? <CategoriesPage /> : <AdminForbiddenPage />;
+  // Halaman khusus Admin; backend juga menolak permintaan Penulis (403).
+  const adminOnly = (page: ReactElement) => (user.role === 'admin' ? page : <AdminForbiddenPage />);
+
+  if (pathname === paths.adminCategories) return adminOnly(<CategoriesPage />);
+  if (pathname === paths.adminMessages) return adminOnly(<MessagesPage />);
+
+  const messageMatch = pathname.match(/^\/admin\/pesan\/(\d+)$/);
+  if (messageMatch) {
+    const id = Number(messageMatch[1]);
+    // key: berpindah antarpesan memasang ulang halaman (status "sudah ditandai dibaca" per pesan).
+    return adminOnly(<MessageDetailPage key={id} messageId={id} />);
   }
 
   return <AdminNotFoundPage />;

@@ -1,11 +1,18 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
-import { searchArticles } from '../data/articlesData';
 import { paths } from '../lib/router';
+import { testArticles } from '../test/publicApi';
+import { server } from '../test/server';
+import { renderPublic as render } from '../test/utils';
 import SearchBar from './SearchBar';
 
 const getInput = () => screen.getByRole('textbox', { name: 'Cari artikel portofolio' });
+
+/** Artikel tiruan yang judul/ringkasannya memuat kata kunci (sama dengan pencarian server). */
+const searchArticles = (term: string) =>
+  testArticles.filter((a) => `${a.title} ${a.excerpt}`.toLowerCase().includes(term.toLowerCase()));
 
 describe('SearchBar', () => {
   it('menyediakan kolom cari dengan placeholder kontekstual', () => {
@@ -18,18 +25,46 @@ describe('SearchBar', () => {
     expect(screen.queryByText(/hasil pencarian/i)).not.toBeInTheDocument();
   });
 
-  it('menampilkan jumlah dan daftar hasil (judul + kategori) sesuai kueri', async () => {
+  it('menampilkan jumlah dan daftar hasil (judul + kategori) dari API sesuai kueri', async () => {
     const user = userEvent.setup();
     render(<SearchBar />);
-    const expected = searchArticles('transparansi');
+    const expected = searchArticles('panduan');
+    expect(expected.length).toBeGreaterThan(1);
 
-    await user.type(getInput(), 'transparansi');
+    await user.type(getInput(), 'panduan');
 
     expect(await screen.findByText(`${expected.length} hasil pencarian`)).toBeInTheDocument();
     for (const article of expected) {
-      const link = screen.getByRole('link', { name: new RegExp(article.title.slice(0, 20)) });
-      expect(link).toHaveAttribute('href', paths.article(article.id));
+      const link = screen.getByRole('link', { name: (name) => name.startsWith(article.title) });
+      expect(link).toHaveAttribute('href', paths.article(article.slug));
     }
+  });
+
+  it('menunggu jeda mengetik: satu permintaan untuk kata kunci utuh', async () => {
+    const searches: string[] = [];
+    server.events.on('request:start', ({ request }) => {
+      const cari = new URL(request.url).searchParams.get('cari');
+      if (cari) searches.push(cari);
+    });
+    const user = userEvent.setup();
+    render(<SearchBar />);
+
+    await user.type(getInput(), 'panduan');
+    expect(screen.getByRole('status')).toHaveTextContent('Mencari…');
+    await screen.findByText(/hasil pencarian/);
+
+    expect(searches).toEqual(['panduan']);
+  });
+
+  it('pencarian gagal: pesan galat, bukan "tidak ada hasil"', async () => {
+    server.use(http.get('/api/articles', () => HttpResponse.error()));
+    const user = userEvent.setup();
+    render(<SearchBar />);
+
+    await user.type(getInput(), 'panduan');
+
+    expect(await screen.findByText(/Pencarian gagal/)).toBeInTheDocument();
+    expect(screen.queryByText(/Tidak ada hasil/)).not.toBeInTheDocument();
   });
 
   it('menampilkan pesan (bukan daftar kosong) saat tidak ada hasil', async () => {
@@ -48,9 +83,11 @@ describe('SearchBar', () => {
     render(<SearchBar onSelect={onSelect} />);
     const [first] = searchArticles('transparansi');
 
-    await user.type(getInput(), 'transparansi{Enter}');
+    await user.type(getInput(), 'transparansi');
+    await screen.findByText('1 hasil pencarian');
+    await user.keyboard('{Enter}');
 
-    expect(window.location.pathname).toBe(paths.article(first.id));
+    expect(window.location.pathname).toBe(paths.article(first.slug));
     expect(getInput()).toHaveValue('');
     expect(onSelect).toHaveBeenCalledOnce();
     expect(screen.queryByText(/hasil pencarian/i)).not.toBeInTheDocument();
@@ -60,7 +97,9 @@ describe('SearchBar', () => {
     const user = userEvent.setup();
     render(<SearchBar />);
 
-    await user.type(getInput(), 'zzzxxx{Enter}');
+    await user.type(getInput(), 'zzzxxx');
+    await screen.findByText(/Tidak ada hasil untuk/);
+    await user.keyboard('{Enter}');
 
     expect(window.location.pathname).toBe('/');
     expect(getInput()).toHaveValue('zzzxxx');
@@ -70,14 +109,14 @@ describe('SearchBar', () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
     render(<SearchBar onSelect={onSelect} />);
-    const [, second] = searchArticles('transparansi');
+    const [, second] = searchArticles('panduan');
 
-    await user.type(getInput(), 'transparansi');
+    await user.type(getInput(), 'panduan');
     await user.click(
-      await screen.findByRole('link', { name: new RegExp(second.title.slice(0, 20)) }),
+      await screen.findByRole('link', { name: (name) => name.startsWith(second.title) }),
     );
 
-    expect(window.location.pathname).toBe(paths.article(second.id));
+    expect(window.location.pathname).toBe(paths.article(second.slug));
     expect(getInput()).toHaveValue('');
     expect(onSelect).toHaveBeenCalledOnce();
   });

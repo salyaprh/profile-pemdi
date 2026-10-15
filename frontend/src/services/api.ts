@@ -23,6 +23,11 @@ interface RequestOptions {
   method?: Method;
   body?: unknown;
   signal?: AbortSignal;
+  /**
+   * Token CSRF untuk rute bersesi (bawaan). `false` untuk endpoint publik tanpa sesi
+   * (mis. formulir kontak): tidak ada cookie sesi yang dibuat untuk pengunjung.
+   */
+  csrf?: boolean;
 }
 
 const XSRF_COOKIE = 'XSRF-TOKEN';
@@ -69,7 +74,7 @@ function toApiError(status: number, data: unknown): ApiError {
   return new ApiError(status, messageFor(status, payload.message), fieldErrors);
 }
 
-function send(path: string, method: Method, body: unknown, signal?: AbortSignal) {
+function send(path: string, method: Method, body: unknown, csrf: boolean, signal?: AbortSignal) {
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
@@ -78,7 +83,7 @@ function send(path: string, method: Method, body: unknown, signal?: AbortSignal)
   const isForm = body instanceof FormData;
   if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
 
-  const token = readCookie(XSRF_COOKIE);
+  const token = csrf ? readCookie(XSRF_COOKIE) : null;
   if (method !== 'GET' && token) headers['X-XSRF-TOKEN'] = token;
 
   return fetch(path, {
@@ -97,19 +102,19 @@ async function refreshCsrfCookie(signal?: AbortSignal) {
 
 export async function apiRequest<T>(
   path: string,
-  { method = 'GET', body, signal }: RequestOptions = {},
+  { method = 'GET', body, signal, csrf = true }: RequestOptions = {},
 ): Promise<T> {
-  const mutating = method !== 'GET';
+  const mutating = method !== 'GET' && csrf;
   let response: Response;
 
   try {
     if (mutating && !readCookie(XSRF_COOKIE)) await refreshCsrfCookie(signal);
-    response = await send(path, method, body, signal);
+    response = await send(path, method, body, csrf, signal);
 
     // 419: token CSRF tidak cocok lagi (mis. sesi berganti di tab lain). Ambil token baru, ulang sekali.
     if (response.status === 419 && mutating) {
       await refreshCsrfCookie(signal);
-      response = await send(path, method, body, signal);
+      response = await send(path, method, body, csrf, signal);
     }
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error;

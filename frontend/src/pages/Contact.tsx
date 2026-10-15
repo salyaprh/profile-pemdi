@@ -1,9 +1,13 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Button, PhoneInput, TextArea, TextField, useToast } from '@idds/react';
+import { useQuery } from '@tanstack/react-query';
 import { paths } from '../lib/router';
 import { usePageMeta } from '../lib/seo';
 import {
+  EMAIL_MAX_LENGTH,
   MESSAGE_MAX_LENGTH,
+  NAME_MAX_LENGTH,
+  SUBJECT_MAX_LENGTH,
   isEmptyPhone,
   validateEmail,
   validateMessage,
@@ -12,7 +16,13 @@ import {
   validateSubject,
   type ValidationResult,
 } from '../lib/validators';
-import { sendContactMessage, type ContactMessage } from '../services/contact';
+import { ApiError } from '../services/api';
+import {
+  HONEYPOT_FIELD,
+  fetchContactToken,
+  sendContactMessage,
+  type ContactMessage,
+} from '../services/contact';
 
 type FieldName = keyof ContactMessage;
 type FieldErrors = Partial<Record<FieldName, string>>;
@@ -49,6 +59,13 @@ export default function Contact() {
   // Validasi per field baru aktif setelah percobaan kirim pertama.
   const [submitted, setSubmitted] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [honeypot, setHoneypot] = useState('');
+  // Token waktu dari server (jebakan bot); diambil saat formulir dibuka, berlaku 2 jam.
+  const token = useQuery({
+    queryKey: ['contact-token'],
+    queryFn: ({ signal }) => fetchContactToken(signal),
+    staleTime: 60 * 60_000,
+  });
 
   const hasValue = (field: FieldName) =>
     field === 'phone' ? !isEmptyPhone(values.phone) : values[field].trim().length > 0;
@@ -80,47 +97,66 @@ export default function Contact() {
     }
     setErrors(nextErrors);
 
-    const firstInvalid = fieldOrder.find((field) => nextErrors[field]);
-    if (firstInvalid) {
-      formRef.current?.querySelector<HTMLElement>(`[name="${firstInvalid}"]`)?.focus();
-      return;
-    }
+    const focusFirst = (fieldErrors: FieldErrors) => {
+      const first = fieldOrder.find((field) => fieldErrors[field]);
+      if (first) formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`)?.focus();
+      return Boolean(first);
+    };
+    if (focusFirst(nextErrors)) return;
 
     setIsSending(true);
     try {
-      const result = await sendContactMessage({
-        ...values,
-        // Hanya kode negara (mis. "+62") berarti tidak ada nomor.
-        phone: isEmptyPhone(values.phone) ? '' : values.phone,
+      const formToken = token.data ?? (await token.refetch({ throwOnError: true })).data;
+      if (!formToken) throw new ApiError(0, 'Token formulir tidak tersedia.');
+      await sendContactMessage(
+        {
+          ...values,
+          // Hanya kode negara (mis. "+62") berarti tidak ada nomor.
+          phone: isEmptyPhone(values.phone) ? '' : values.phone,
+        },
+        { token: formToken, honeypot },
+      );
+      toast({
+        title: 'Pesan terkirim',
+        description: 'Terima kasih, pesan Anda telah kami terima.',
+        state: 'positive',
+        duration: 4000,
+        position: 'top-right',
       });
-      if (result === 'sent') {
-        toast({
-          title: 'Pesan terkirim',
-          description: 'Terima kasih, pesan Anda telah kami terima.',
-          state: 'positive',
-          duration: 4000,
-          position: 'top-right',
-        });
-        setValues(emptyValues);
-        setErrors({});
-        setSubmitted(false);
+      setValues(emptyValues);
+      setErrors({});
+      setSubmitted(false);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 422) {
+        // Aturan server sama dengan validators.ts; galat per kolom biasanya sudah tertangkap di
+        // browser, kecuali token formulir yang kedaluwarsa (formulir dibiarkan terbuka lama).
+        const serverErrors: FieldErrors = {};
+        for (const field of fieldOrder) {
+          if (error.fieldErrors[field]) serverErrors[field] = error.fieldErrors[field];
+        }
+        setErrors(serverErrors);
+        if (!focusFirst(serverErrors)) {
+          void token.refetch();
+          toast({
+            title: 'Formulir perlu dimuat ulang',
+            description: error.fieldErrors.token ?? error.message,
+            state: 'destructive',
+            duration: 6000,
+            position: 'top-right',
+          });
+        }
       } else {
         toast({
-          title: 'Formulir belum terhubung ke server',
-          description: 'Pesan Anda belum dikirim karena penerima pesan belum dikonfigurasi.',
-          state: 'default',
-          duration: 6000,
+          title: 'Pesan gagal dikirim',
+          description:
+            error instanceof ApiError && error.status === 429
+              ? 'Terlalu banyak pesan dari jaringan Anda. Coba lagi beberapa menit lagi.'
+              : 'Periksa koneksi internet Anda lalu coba lagi.',
+          state: 'destructive',
+          duration: 5000,
           position: 'top-right',
         });
       }
-    } catch {
-      toast({
-        title: 'Pesan gagal dikirim',
-        description: 'Periksa koneksi internet Anda lalu coba lagi.',
-        state: 'destructive',
-        duration: 5000,
-        position: 'top-right',
-      });
     } finally {
       setIsSending(false);
     }
@@ -151,6 +187,7 @@ export default function Contact() {
           value={values.name}
           onChange={setField('name')}
           placeholder="Masukkan nama lengkap Anda"
+          maxLength={NAME_MAX_LENGTH}
           required
           status={statusOf('name')}
           statusMessage={errors.name}
@@ -164,6 +201,7 @@ export default function Contact() {
           value={values.email}
           onChange={setField('email')}
           placeholder="nama@instansi.go.id"
+          maxLength={EMAIL_MAX_LENGTH}
           required
           status={statusOf('email')}
           statusMessage={errors.email}
@@ -186,6 +224,7 @@ export default function Contact() {
           value={values.subject}
           onChange={setField('subject')}
           placeholder="Contoh: Kolaborasi program"
+          maxLength={SUBJECT_MAX_LENGTH}
           required
           status={statusOf('subject')}
           statusMessage={errors.subject}
@@ -204,6 +243,23 @@ export default function Contact() {
           status={statusOf('message')}
           statusMessage={errors.message}
         />
+
+        {/* Jebakan bot: tidak terlihat dan tidak dapat dicapai keyboard maupun pembaca layar. */}
+        <div
+          aria-hidden="true"
+          className="absolute -left-[10000px] top-auto size-px overflow-hidden"
+        >
+          <label htmlFor="kontak-kolom-khusus">Jangan isi kolom ini</label>
+          <input
+            id="kontak-kolom-khusus"
+            type="text"
+            name={HONEYPOT_FIELD}
+            value={honeypot}
+            onChange={(event) => setHoneypot(event.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
+          />
+        </div>
 
         <Button type="submit" hierarchy="primary" size="lg" className="w-full" disabled={isSending}>
           {isSending ? 'Mengirim…' : 'Kirim pesan'}

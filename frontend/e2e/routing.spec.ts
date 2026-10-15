@@ -1,13 +1,16 @@
 import { expect, test } from './fixtures';
+import { seeded } from './helpers';
+
+const ARTICLE_URL = /\/portfolio\/[a-z0-9-]+$/;
 
 const pages = [
   { path: '/', title: 'Pemerintah Digital | PEMDI PANRB', h1: /Transformasi digital pemerintah/ },
   { path: '/portfolio', title: 'Portofolio | PEMDI PANRB', h1: 'Portofolio Pemerintah Digital' },
   { path: '/contact', title: 'Hubungi kami | PEMDI PANRB', h1: 'Hubungi kami' },
   {
-    path: '/portfolio/3',
-    title: 'Mulai 2025, Informasi Layanan Publik Terpusat di INAgov | PEMDI PANRB',
-    h1: 'Mulai 2025, Informasi Layanan Publik Terpusat di INAgov',
+    path: `/portfolio/${seeded.serviceArticle.slug}`,
+    title: `${seeded.serviceArticle.title} | PEMDI PANRB`,
+    h1: seeded.serviceArticle.title,
   },
 ];
 
@@ -31,8 +34,16 @@ test('path tidak dikenal menampilkan halaman 404 yang noindex', async ({ page })
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
 });
 
-test('ID artikel yang tidak ada menampilkan 404 khusus artikel', async ({ page }) => {
+test('slug artikel yang tidak ada (atau belum terbit) menampilkan 404 khusus artikel', async ({
+  page,
+  problems,
+}) => {
+  // Browser mencatat respons 404 API sebagai error konsol; itu memang diharapkan di sini.
+  problems.allowConsoleErrors.push(/status of 404/);
   await page.goto('/portfolio/999');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Artikel tidak ditemukan');
+  // URL lama berbasis ID tidak lagi berlaku.
+  await page.goto('/portfolio/3');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Artikel tidak ditemukan');
 });
 
@@ -57,17 +68,21 @@ test('berkas statis yang tidak ada mengembalikan 404 sungguhan, bukan index.html
 test('filter kategori bertahan saat membuka artikel lalu menekan Back', async ({ page }) => {
   await page.goto('/portfolio');
   await page.getByRole('button', { name: 'Panduan Pengguna' }).click();
-  await expect(page).toHaveURL(/\?kategori=Panduan\+Pengguna$/);
+  await expect(page).toHaveURL(/\?kategori=panduan-pengguna$/);
+  await expect(page.getByRole('button', { name: 'Panduan Pengguna' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   const status = page.getByRole('status').filter({ hasText: 'Menampilkan' });
-  await expect(status).toContainText('dari 11 artikel');
+  await expect(status).toContainText(`dari ${seeded.guideCount} artikel`);
 
   await page.locator('main a[href^="/portfolio/"]').first().click();
-  await expect(page).toHaveURL(/\/portfolio\/\d+$/);
+  await expect(page).toHaveURL(ARTICLE_URL);
   await expect(page.getByText('Panduan Pengguna').first()).toBeVisible();
 
   await page.goBack();
-  await expect(page).toHaveURL(/\?kategori=Panduan\+Pengguna$/);
-  await expect(status).toContainText('dari 11 artikel');
+  await expect(page).toHaveURL(/\?kategori=panduan-pengguna$/);
+  await expect(status).toContainText(`dari ${seeded.guideCount} artikel`);
 });
 
 test('paginasi memperbarui URL dan konten, dan Back kembali ke halaman sebelumnya', async ({
@@ -75,31 +90,35 @@ test('paginasi memperbarui URL dan konten, dan Back kembali ke halaman sebelumny
 }) => {
   await page.goto('/portfolio');
   const status = page.getByRole('status').filter({ hasText: 'Menampilkan' });
-  await expect(status).toContainText('Menampilkan 1-12 dari 36 artikel');
+  // Uji lain bisa menerbitkan artikel secara paralel, jadi totalnya tidak dipatok.
+  await expect(status).toContainText(/Menampilkan 1-12 dari \d+ artikel/);
 
   await page.getByRole('link', { name: 'Halaman 3' }).click();
   await expect(page).toHaveURL(/\?halaman=3$/);
-  await expect(status).toContainText('Menampilkan 25-36 dari 36 artikel');
+  await expect(status).toContainText(/Menampilkan 25-36 dari \d+ artikel/);
 
   await page.goBack();
   await expect(page).toHaveURL(/\/portfolio$/);
-  await expect(status).toContainText('Menampilkan 1-12 dari 36 artikel');
+  await expect(status).toContainText(/Menampilkan 1-12 dari \d+ artikel/);
 
   await page.goForward();
-  await expect(status).toContainText('Menampilkan 25-36 dari 36 artikel');
+  await expect(status).toContainText(/Menampilkan 25-36 dari \d+ artikel/);
 });
 
-test('halaman di luar jangkauan dibatasi ke halaman terakhir', async ({ page }) => {
+test('halaman di luar jangkauan memberi tautan ke halaman pertama', async ({ page }) => {
   await page.goto('/portfolio?halaman=99');
+  await expect(page.getByText('Halaman ini kosong')).toBeVisible();
+  await page.getByRole('link', { name: 'Ke halaman pertama' }).click();
+  await expect(page).toHaveURL(/\/portfolio$/);
   await expect(page.getByRole('status').filter({ hasText: 'Menampilkan' })).toContainText(
-    'Menampilkan 25-36 dari 36 artikel',
+    /Menampilkan 1-12/,
   );
 });
 
 test('klik kartu di beranda membuka detail, breadcrumb kembali ke portofolio', async ({ page }) => {
   await page.goto('/');
-  await page.locator('a[href^="/portfolio/"]').first().click();
-  await expect(page).toHaveURL(/\/portfolio\/\d+$/);
+  await page.locator('main a[href^="/portfolio/"]').first().click();
+  await expect(page).toHaveURL(ARTICLE_URL);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
   await page
@@ -110,11 +129,15 @@ test('klik kartu di beranda membuka detail, breadcrumb kembali ke portofolio', a
 });
 
 test('detail artikel menampilkan artikel terkait yang valid', async ({ page }) => {
-  await page.goto('/portfolio/1');
+  await page.goto(`/portfolio/${seeded.policyArticle.slug}`);
   const related = page.getByRole('region', { name: 'Artikel terkait' });
   await expect(related.locator('a[href^="/portfolio/"]')).toHaveCount(3);
-  await expect(related.locator('a[href="/portfolio/1"]')).toHaveCount(0);
+  await expect(related.locator(`a[href="/portfolio/${seeded.policyArticle.slug}"]`)).toHaveCount(0);
 
   await related.getByRole('link', { name: /Lihat semua/ }).click();
-  await expect(page).toHaveURL(/\/portfolio\?kategori=Kebijakan/);
+  await expect(page).toHaveURL(/\/portfolio\?kategori=kebijakan-regulasi$/);
+  await expect(page.getByRole('button', { name: 'Kebijakan & Regulasi' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 });

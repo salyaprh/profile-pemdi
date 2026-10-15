@@ -1,31 +1,19 @@
-import { useMemo } from 'react';
-import { Chip } from '@idds/react';
-import ArticleCard from '../components/ArticleCard';
+import { Button } from '@idds/react';
+import ArticleCard, { ArticleGridSkeleton } from '../components/ArticleCard';
 import ButtonLink from '../components/ButtonLink';
 import EmptyState from '../components/EmptyState';
+import FilterChips from '../components/FilterChips';
 import PaginationNav from '../components/PaginationNav';
-import {
-  articles,
-  categoryOptions,
-  isCategoryFilter,
-  type CategoryFilter,
-} from '../data/articlesData';
-import { navigate, paths, useLocation } from '../lib/router';
+import { navigate, paths, portfolioUrl, useLocation } from '../lib/router';
 import { usePageMeta } from '../lib/seo';
+import { useArticles, useCategories } from '../services/content';
 
-const PAGE_SIZE = 12;
-
-function buildUrl(category: CategoryFilter, page: number) {
-  const params = new URLSearchParams();
-  if (category !== 'Semua') params.set('kategori', category);
-  if (page > 1) params.set('halaman', String(page));
-  const query = params.toString();
-  return query ? `${paths.portfolio}?${query}` : paths.portfolio;
-}
+export const PAGE_SIZE = 12;
+const ALL = 'semua';
 
 /**
- * Daftar portofolio. Kategori dan halaman disimpan di URL
- * (?kategori=...&halaman=...) agar tombol Back dan tautan langsung berfungsi.
+ * Daftar portofolio. Kategori (slug) dan halaman disimpan di URL
+ * (?kategori=layanan-publik&halaman=2) agar tombol Back dan tautan langsung berfungsi.
  */
 export default function Articles() {
   usePageMeta({
@@ -34,30 +22,22 @@ export default function Articles() {
     path: paths.portfolio,
   });
   const { searchParams } = useLocation();
+  const category = searchParams.get('kategori') || null;
+  const requestedPage = Math.floor(Number(searchParams.get('halaman')));
+  const page = requestedPage > 1 ? requestedPage : 1;
 
-  const categoryParam = searchParams.get('kategori');
-  const selectedCategory: CategoryFilter = isCategoryFilter(categoryParam)
-    ? categoryParam
-    : 'Semua';
+  const categories = useCategories();
+  const articles = useArticles({ kategori: category, page, perPage: PAGE_SIZE });
 
-  const filteredArticles = useMemo(
-    () =>
-      selectedCategory === 'Semua'
-        ? articles
-        : articles.filter((article) => article.category === selectedCategory),
-    [selectedCategory],
-  );
+  const options = [
+    { label: 'Semua', value: ALL },
+    ...(categories.data ?? []).map(({ name, slug }) => ({ label: name, value: slug })),
+  ];
 
-  const totalPages = Math.max(1, Math.ceil(filteredArticles.length / PAGE_SIZE));
-  const requestedPage = Math.floor(Number(searchParams.get('halaman'))) || 1;
-  const currentPage = Math.min(Math.max(1, requestedPage), totalPages);
-  const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const currentArticles = filteredArticles.slice(startIndex, startIndex + PAGE_SIZE);
-
-  const handleCategoryChange = (value: string | string[]) => {
-    const next = Array.isArray(value) ? value[0] : value;
-    navigate(buildUrl(isCategoryFilter(next) ? next : 'Semua', 1), { scroll: false });
-  };
+  const meta = articles.data?.meta;
+  const list = articles.data?.data ?? [];
+  const first = meta ? (meta.current_page - 1) * meta.per_page + 1 : 0;
+  const outOfRange = meta !== undefined && list.length === 0 && meta.total > 0;
 
   return (
     <div className="mx-auto w-full max-w-[1240px] px-5 py-8 sm:px-6 lg:px-8 lg:py-12">
@@ -70,53 +50,90 @@ export default function Articles() {
         </p>
       </div>
 
-      <div className="mb-8">
-        <Chip
-          options={categoryOptions}
-          selected={selectedCategory}
-          onSelect={handleCategoryChange}
-          showCustomization={false}
-          variant="outline"
-          size="medium"
-          className="[&_.ina-chip__list]:flex-wrap [&_.ina-chip__list]:gap-2"
-          selectedColor="var(--color-primary-600)"
-          selectedChipClassName="!bg-primary-50"
-        />
-      </div>
-
-      <p className="mb-4 text-caption text-content-secondary" role="status">
-        {filteredArticles.length > 0
-          ? `Menampilkan ${startIndex + 1}-${startIndex + currentArticles.length} dari ${filteredArticles.length} artikel`
-          : 'Tidak ada artikel'}
-      </p>
-
-      {currentArticles.length > 0 ? (
-        <ul className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-          {currentArticles.map((article) => (
-            <li key={article.id}>
-              <ArticleCard article={article} />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <EmptyState
-          title="Belum ada artikel di kategori ini"
-          description="Coba pilih kategori lain atau tampilkan semua artikel."
-          action={
-            <ButtonLink to={paths.portfolio} hierarchy="secondary">
-              Tampilkan semua artikel
-            </ButtonLink>
-          }
-        />
+      {categories.data && (
+        <div className="mb-8">
+          <FilterChips
+            label="Filter kategori"
+            size="medium"
+            options={options}
+            selected={category ?? ALL}
+            onSelect={(value) =>
+              navigate(portfolioUrl(value === ALL ? null : value), { scroll: false })
+            }
+          />
+        </div>
       )}
 
-      <div className="mt-6 md:mt-8">
-        <PaginationNav
-          currentPage={currentPage}
-          totalPages={totalPages}
-          hrefFor={(page) => buildUrl(selectedCategory, page)}
+      {articles.isPending ? (
+        <ArticleGridSkeleton count={6} />
+      ) : articles.isError ? (
+        <EmptyState
+          title="Artikel gagal dimuat"
+          description={articles.error.message}
+          action={
+            <Button hierarchy="secondary" onClick={() => void articles.refetch()}>
+              Coba lagi
+            </Button>
+          }
         />
-      </div>
+      ) : (
+        <>
+          <p className="mb-4 text-caption text-content-secondary" role="status">
+            {list.length > 0
+              ? `Menampilkan ${first}-${first + list.length - 1} dari ${articles.data.meta.total} artikel`
+              : 'Tidak ada artikel'}
+          </p>
+
+          {list.length > 0 ? (
+            <ul
+              className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6"
+              aria-busy={articles.isPlaceholderData}
+            >
+              {list.map((article) => (
+                <li key={article.slug}>
+                  <ArticleCard article={article} />
+                </li>
+              ))}
+            </ul>
+          ) : outOfRange ? (
+            <EmptyState
+              title="Halaman ini kosong"
+              description={`Daftar ini hanya sampai halaman ${articles.data.meta.last_page}.`}
+              action={
+                <ButtonLink to={portfolioUrl(category)} hierarchy="secondary">
+                  Ke halaman pertama
+                </ButtonLink>
+              }
+            />
+          ) : (
+            <EmptyState
+              title={category ? 'Belum ada artikel di kategori ini' : 'Belum ada artikel'}
+              description={
+                category
+                  ? 'Coba pilih kategori lain atau tampilkan semua artikel.'
+                  : 'Artikel yang terbit akan tampil di sini.'
+              }
+              action={
+                category ? (
+                  <ButtonLink to={paths.portfolio} hierarchy="secondary">
+                    Tampilkan semua artikel
+                  </ButtonLink>
+                ) : undefined
+              }
+            />
+          )}
+
+          {list.length > 0 && (
+            <div className="mt-6 md:mt-8">
+              <PaginationNav
+                currentPage={articles.data.meta.current_page}
+                totalPages={articles.data.meta.last_page}
+                hrefFor={(target) => portfolioUrl(category, target)}
+              />
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

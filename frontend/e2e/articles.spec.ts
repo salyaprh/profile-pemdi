@@ -194,7 +194,7 @@ test('Penulis menulis dan mengajukan; Admin mengembalikan, lalu menerbitkan sete
   });
   expect(response.ok()).toBe(true);
   const { data } = (await response.json()) as {
-    data: { status: string; body_html: string; cover_url: string; source: string };
+    data: { slug: string; status: string; body_html: string; cover_url: string; source: string };
   };
   expect(data).toMatchObject({ status: 'terbit', source: 'Biro Hubungan Masyarakat' });
   expect(data.cover_url).toMatch(UPLOADED_IMAGE);
@@ -220,6 +220,22 @@ test('Penulis menulis dan mengajukan; Admin mengembalikan, lalu menerbitkan sete
   const image = await page.request.get(data.cover_url);
   expect(image.headers()['content-type']).toBe('image/webp');
   expect(image.headers()['x-content-type-options']).toBe('nosniff');
+
+  // Artikel yang terbit langsung tampil di situs publik, tanpa build ulang.
+  await page.goto(`/portfolio/${data.slug}`);
+  await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
+  const publicBody = page.locator('.article-body');
+  await expect(publicBody.getByRole('heading', { level: 2, name: 'Latar belakang' })).toBeVisible();
+  await expect(publicBody.getByRole('link', { name: 'Situs Kementerian PANRB' })).toHaveAttribute(
+    'href',
+    'https://www.menpan.go.id',
+  );
+  const publicImage = publicBody.getByRole('img', { name: 'Ilustrasi layanan digital ASN' });
+  await expect
+    .poll(() => publicImage.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBe(328);
+  await expect(page.getByText('Sumber: Biro Hubungan Masyarakat')).toBeVisible();
+  expect(await audit(page)).toEqual([]);
 });
 
 test('perubahan yang belum disimpan meminta konfirmasi sebelum meninggalkan editor', async ({

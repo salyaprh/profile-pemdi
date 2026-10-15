@@ -1,7 +1,14 @@
 import { expect, test } from './fixtures';
+import { seeded } from './helpers';
 
 // Uji tata letak untuk SEMUA ukuran layar. Khusus desktop/mobile: layout.desktop.spec.ts, layout.mobile.spec.ts.
-const routes = ['/', '/portfolio', '/portfolio/3', '/contact', '/halaman-ngawur'];
+const routes = [
+  '/',
+  '/portfolio',
+  `/portfolio/${seeded.serviceArticle.slug}`,
+  '/contact',
+  '/halaman-ngawur',
+];
 
 test('skip link: Tab pertama memfokuskannya dan Enter memindahkan fokus ke konten utama', async ({
   page,
@@ -44,6 +51,8 @@ for (const path of routes) {
 test('logo dan semua gambar kartu termuat (tidak ada gambar rusak)', async ({ page }) => {
   await page.goto('/portfolio');
   const images = page.locator('main img, header img, footer img');
+  // Kartu artikel dimuat dari API: 12 per halaman (+ logo header dan footer).
+  await expect(page.locator('main img')).toHaveCount(12);
   const count = await images.count();
   expect(count).toBeGreaterThan(10);
 
