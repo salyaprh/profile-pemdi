@@ -7,6 +7,7 @@ const pages = [
   { path: '/', title: 'Pemerintah Digital | PEMDI PANRB', h1: /Transformasi digital pemerintah/ },
   { path: '/portfolio', title: 'Portofolio | PEMDI PANRB', h1: 'Portofolio Pemerintah Digital' },
   { path: '/contact', title: 'Hubungi kami | PEMDI PANRB', h1: 'Hubungi kami' },
+  { path: '/layanan', title: 'Layanan | PEMDI PANRB', h1: 'Layanan' },
   {
     path: `/portfolio/${seeded.serviceArticle.slug}`,
     title: `${seeded.serviceArticle.title} | PEMDI PANRB`,

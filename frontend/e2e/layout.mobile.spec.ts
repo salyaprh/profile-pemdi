@@ -22,6 +22,32 @@ test('menu utama tersembunyi dan dibuka lewat hamburger, lalu menutup saat memil
   await expect(page.getByRole('navigation', { name: 'Navigasi mobile' })).toBeHidden();
 });
 
+test('submenu Portofolio di menu mobile dibuka lewat tombolnya', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Buka menu' }).click();
+  const mobileNav = page.getByRole('navigation', { name: 'Navigasi mobile' });
+  const subToggle = mobileNav.getByRole('button', { name: 'Portofolio' });
+
+  await expect(subToggle).toHaveAttribute('aria-expanded', 'false');
+  await subToggle.click();
+  await mobileNav.getByRole('link', { name: 'Kebijakan & Regulasi' }).click();
+
+  await expect(page).toHaveURL(/\/portfolio\?kategori=kebijakan-regulasi$/);
+  await expect(mobileNav).toBeHidden();
+});
+
+test('submenu Layanan di menu mobile membuka kartu layanan', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Buka menu' }).click();
+  const mobileNav = page.getByRole('navigation', { name: 'Navigasi mobile' });
+  await mobileNav.getByRole('button', { name: 'Layanan' }).click();
+  await mobileNav.getByRole('link', { name: 'Kompetensi' }).click();
+
+  await expect(page).toHaveURL(/\/layanan#kompetensi$/);
+  await expect(mobileNav).toBeHidden();
+  await expect(page.getByRole('region', { name: 'Kompetensi Digital ASN' })).toBeInViewport();
+});
+
 test('menu mobile ditutup dengan Escape', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Buka menu' }).click();

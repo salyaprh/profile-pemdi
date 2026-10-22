@@ -2,29 +2,23 @@ import { lazy, Suspense, useState } from 'react';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import AdminLoadingScreen from './admin/AdminLoadingScreen';
 import Layout from './components/Layout';
-import { isAdminPath, paths, useLocation } from './lib/router';
+import { decodeSegment, isAdminPath, paths, useLocation } from './lib/router';
 import ArticleDetail from './pages/ArticleDetail';
 import Articles from './pages/Articles';
 import Contact from './pages/Contact';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
+import Services from './pages/Services';
 import { createPublicQueryClient } from './services/queryClient';
 
 // Kode panel admin dipisah ke chunk sendiri: pengunjung situs publik tidak mengunduhnya.
 const AdminApp = lazy(() => import('./admin/AdminApp'));
 
-function decodeSegment(segment: string): string | null {
-  try {
-    return decodeURIComponent(segment);
-  } catch {
-    return null;
-  }
-}
-
 function renderRoute(pathname: string) {
   if (pathname === paths.home) return <Home />;
   if (pathname === paths.portfolio) return <Articles />;
   if (pathname === paths.contact) return <Contact />;
+  if (pathname === paths.services) return <Services />;
 
   const articleMatch = pathname.match(/^\/portfolio\/([^/]+)$/);
   if (articleMatch) {

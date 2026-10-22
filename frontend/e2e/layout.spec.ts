@@ -4,6 +4,7 @@ import { seeded } from './helpers';
 // Uji tata letak untuk SEMUA ukuran layar. Khusus desktop/mobile: layout.desktop.spec.ts, layout.mobile.spec.ts.
 const routes = [
   '/',
+  '/layanan',
   '/portfolio',
   `/portfolio/${seeded.serviceArticle.slug}`,
   '/contact',

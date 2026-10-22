@@ -51,6 +51,7 @@ CI (`../.github/workflows/ci.yml`) menjalankan dua job frontend pada setiap PR: 
 | Path                                        | Halaman                                                                                            |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `/`                                         | Beranda                                                                                            |
+| `/layanan`                                  | Layanan PEMDI (kartu per layanan, tautan ke platformnya); menu Layanan menaut ke `/layanan#<id>`   |
 | `/portfolio`                                | Daftar portofolio. Filter (slug kategori) dan halaman di URL: `?kategori=layanan-publik&halaman=2` |
 | `/portfolio/:slug`                          | Detail artikel + artikel terkait (404 bila tidak ada atau belum terbit)                            |
 | `/contact`                                  | Formulir "Hubungi kami"                                                                            |
@@ -73,9 +74,9 @@ src/
   main.tsx            entry: font, tema IDDS (setBrandTheme('inagov')), ErrorBoundary, ToastProvider
   App.tsx             pemetaan rute -> halaman
   index.css           Tailwind, token IDDS, skala tipografi IDDS
-  components/         Header, Footer, SearchBar, PaginationNav, ArticleCard, ButtonLink, EmptyState, ErrorBoundary, Layout
-  pages/              Home, Articles (portofolio), ArticleDetail, Contact, NotFound
-  data/               siteContent.ts (menu, deskripsi situs, statistik beranda; dipindah ke Pengaturan di Fase 4)
+  components/         Header, NavDropdown (submenu Portofolio), Footer, SearchBar, PaginationNav, ArticleCard, ButtonLink, EmptyState, ErrorBoundary, Layout
+  pages/              Home, Services (layanan), Articles (portofolio), ArticleDetail, Contact, NotFound
+  data/               siteContent.ts (nama situs, deskripsi bawaan, menu utama, daftar layanan; isi situs lain diatur Admin di Pengaturan)
   lib/                router.tsx, seo.ts (title/meta per halaman), validators.ts, format.ts
   services/           api.ts (klien API: sesi cookie + CSRF, pesan galat), content.ts (kontrak + hook API publik),
                       contact.ts (formulir kontak), queryClient.ts
@@ -89,7 +90,7 @@ src/
   test/               setup Vitest, server.ts (MSW), publicApi.ts (API publik tiruan bawaan), utils.tsx
 vite-plugins/         selfHostFonts.ts (buang @import Google Fonts dari CSS IDDS), seo.ts (robots.txt)
 public/               panrb.svg, images/articles/*, _headers (header keamanan + cache)
-../deploy/            nginx.conf.example (hosting sendiri/PDN)
+../deploy/            nginx.conf + README.md (hosting sendiri/PDN)
 ../.github/           ci.yml, dependabot.yml
 ```
 
@@ -107,31 +108,31 @@ Formulir mengirim `POST /api/contact` ke backend (se-origin, tanpa sesi dan tanp
 
 ## Deploy
 
-> **Sejak Fase 3 situs publik membutuhkan backend Laravel di origin yang sama** (artikel, kategori, formulir kontak, `sitemap.xml`). Hosting statis saja (Cloudflare Pages, Netlify, Vercel) tidak lagi cukup; konfigurasi Nginx lengkap untuk server PANRB disusun di Fase 5. Tabel di bawah hanya berlaku untuk bagian statisnya.
+> **Sejak Fase 3 situs publik membutuhkan backend Laravel di origin yang sama** (artikel, kategori, formulir kontak, `sitemap.xml`). Hosting statis saja (Cloudflare Pages, Netlify, Vercel) tidak lagi cukup. **Jalur utama: server PANRB/PDN dengan `../deploy/nginx.conf`, panduannya di `../deploy/README.md`.** Tabel di bawah hanya berlaku untuk bagian statisnya.
 
 Hasil build adalah berkas statis (`dist/`). Persyaratan hosting:
 
 1. **SPA fallback**: path tak dikenal harus dilayani `index.html`.
 2. **Header keamanan** dari `public/_headers` (CSP ketat, HSTS, `nosniff`, `frame-ancestors 'none'`, dll.) dan cache panjang untuk `/assets/*`.
 
-| Hosting                            | Cara                                                                                                                                                                                           |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Cloudflare Pages** (rekomendasi) | `public/_headers` terbaca otomatis. SPA fallback bawaan **selama tidak ada `404.html` di root** (jangan menambahkannya, dan tidak perlu `_redirects`). Build: `npm run build`, output: `dist`. |
-| **Netlify**                        | `_headers` terbaca otomatis; tambahkan `public/_redirects` berisi `/* /index.html 200`.                                                                                                        |
-| **Vercel**                         | Terjemahkan isi `_headers` ke `vercel.json` (`headers`) dan tambahkan `rewrites` ke `/index.html`.                                                                                             |
-| **Server sendiri / PDN**           | Lihat `../deploy/nginx.conf.example` (belum diuji di server nyata).                                                                                                                            |
+| Hosting                  | Cara                                                                                                                                                                                           |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cloudflare Pages**     | `public/_headers` terbaca otomatis. SPA fallback bawaan **selama tidak ada `404.html` di root** (jangan menambahkannya, dan tidak perlu `_redirects`). Build: `npm run build`, output: `dist`. |
+| **Netlify**              | `_headers` terbaca otomatis; tambahkan `public/_redirects` berisi `/* /index.html 200`.                                                                                                        |
+| **Vercel**               | Terjemahkan isi `_headers` ke `vercel.json` (`headers`) dan tambahkan `rewrites` ke `/index.html`.                                                                                             |
+| **Server sendiri / PDN** | Lihat `../deploy/README.md` dan `../deploy/nginx.conf` (diuji di lokal, belum di server nyata).                                                                                                |
 
 Catatan:
 
 - `_headers` **tidak berlaku untuk respons fungsi serverless** (mis. `/api/*` di Cloudflare Pages Functions); pasang header di kode fungsi.
-- CSP mengizinkan satu `<style>` inline milik `@idds/react` (animasi `Skeleton`) lewat hash. Setelah upgrade `@idds/react`, bila konsol melaporkan pelanggaran `style-src`, perbarui hash di `public/_headers` (dan `../deploy/nginx.conf.example`) sesuai pesan di konsol. Animasinya tetap jalan karena `@keyframes shimmer` juga ada di `src/index.css`.
+- CSP mengizinkan satu `<style>` inline milik `@idds/react` (animasi `Skeleton`) lewat hash. Setelah upgrade `@idds/react`, bila konsol melaporkan pelanggaran `style-src`, perbarui hash di `public/_headers` (dan `../deploy/nginx.conf`) sesuai pesan di konsol. Animasinya tetap jalan karena `@keyframes shimmer` juga ada di `src/index.css`.
 - Pastikan HTTPS aktif sebelum mengandalkan HSTS.
 
 ## SEO dan pratinjau tautan
 
 - `<title>`, deskripsi, `canonical`, dan `og:*` per halaman diatur `src/lib/seo.ts` di browser. Mesin pencari yang menjalankan JavaScript membacanya.
 - `robots.txt` dibuat saat build (baris Sitemap hanya bila `VITE_SITE_URL` diisi). `sitemap.xml` dibuat backend dari artikel terbit di database, jadi artikel baru langsung masuk tanpa build ulang.
-- **Keterbatasan:** pratinjau tautan (WhatsApp, dll.) tidak menjalankan JavaScript sehingga hanya melihat meta statis di `index.html`. Pratinjau per artikel dan `og:image` membutuhkan prerender/SSG dan aset gambar 1200×630 resmi.
+- Pratinjau tautan (WhatsApp, dll.) tidak menjalankan JavaScript. Karena itu `/portfolio/{slug}` dilayani backend Laravel (`ArticlePageController`), yang menyisipkan judul, deskripsi, `canonical`, `og:*`, dan `og:image` 1200×630 artikel ke `index.html`. Halaman lain memakai meta statis tingkat situs.
 
 ## Acuan desain
 
@@ -164,6 +165,7 @@ Beberapa komponen IDDS (`@idds/react` 1.6.x) tidak lolos WCAG 2.2 AA yang diacu 
 | `Chip`                   | chip yang aktif tidak diberi `aria-pressed`, jadi pembaca layar tidak tahu filter mana yang dipilih (WCAG 4.1.2)            | `FilterChips`: tombol toggle sendiri dengan kelas CSS `ina-chip` dan `aria-pressed`                            |
 | `Card`                   | `mediaAlt=""` diganti alt "Card media", sehingga pembaca layar membacakannya di awal setiap tautan kartu                    | `ArticleCard` menulis markup Card IDDS sendiri dengan `alt=""` dan `loading="lazy"`                            |
 | `SingleFileUpload`       | pratinjau memakai URL `blob:` yang diblokir CSP `img-src 'self'`                                                            | `ImageFileInput`: `<input type="file">` asli; pratinjau memakai URL hasil unggahan di server                   |
+| Header (menu ▾)          | anatomi Header IDDS punya menu dengan submenu, tetapi tidak ada komponennya; `BasicDropdown` melanggar `nested-interactive` | `NavDropdown`: pola disclosure WAI-ARIA (tombol + daftar tautan), gaya panel mengikuti `.ina-action-dropdown`  |
 
 Catatan: `Card` IDDS membungkus `title` dalam `<h3>` dan `description` dalam `<p>`. `ArticleCard` menulis markup itu langsung dengan kelas CSS `ina-card` (lihat tabel di atas).
 
@@ -184,3 +186,4 @@ Catatan: `Card` IDDS membungkus `title` dalam `<h3>` dan `description` dalam `<p
 - 36 artikel dan 3 kategori dari seeder backend (`../backend/database/seeders/data/placeholder-content.json`) masih placeholder; ganti lewat CMS.
 - Angka statistik beranda dan deskripsi situs kini diatur Admin di **Pengaturan**, tetapi nilai bawaannya (`../backend/app/Support/SiteSettings.php`) masih placeholder; isi dengan data resmi.
 - Tautan media sosial dan kontak di footer kosong sampai Admin mengisinya (URL resmi belum diketahui).
+- Daftar layanan (menu Layanan dan `/layanan`) ada di `src/data/siteContent.ts` (`allServices`), bukan di CMS. **Survei Kepuasan** sudah disiapkan tetapi tersembunyi karena alamatnya belum ada: isi `url` entri `survei-kepuasan`, maka layanan itu tampil otomatis di menu dan halaman. Alamat empat layanan lain mengikuti repo referensi `aldinosauruss/portal-pemdi`; pastikan ke pemiliknya sebelum rilis.

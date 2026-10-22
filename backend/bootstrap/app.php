@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ArticlePageController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -30,6 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // Sitemap dari artikel terbit; di produksi Nginx meneruskan /sitemap.xml ke Laravel.
             Route::get('sitemap.xml', SitemapController::class)
                 ->middleware(['throttle:public', 'cache.headers:public;max_age=3600;etag']);
+            // Halaman artikel untuk crawler tanpa JavaScript (pratinjau tautan); Nginx meneruskan
+            // /portfolio/{slug} ke sini. Selalu divalidasi ulang agar artikel yang baru terbit/ditarik langsung berlaku.
+            Route::get('portfolio/{slug}', ArticlePageController::class)
+                ->middleware(['throttle:public', 'cache.headers:public;no_cache;etag']);
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

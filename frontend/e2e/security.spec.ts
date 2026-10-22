@@ -105,6 +105,7 @@ test('tidak ada permintaan ke origin lain di seluruh halaman dan interaksi utama
 }) => {
   for (const path of [
     '/',
+    '/layanan',
     '/portfolio',
     `/portfolio/${seeded.serviceArticle.slug}`,
     '/contact',
@@ -147,10 +148,11 @@ test('sitemap.xml dari backend memuat halaman statis dan artikel terbit dengan U
   expect(response.headers()['set-cookie']).toBeUndefined();
   const locs = [...(await response.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
 
-  // 3 halaman statis + 36 artikel placeholder (+ artikel yang diterbitkan uji lain).
-  expect(locs.length).toBeGreaterThanOrEqual(39);
+  // 4 halaman statis + 36 artikel placeholder (+ artikel yang diterbitkan uji lain).
+  expect(locs.length).toBeGreaterThanOrEqual(40);
   expect(locs.every((loc) => loc.startsWith(`${SITE}/`))).toBe(true);
   expect(locs).toContain(`${SITE}/`);
+  expect(locs).toContain(`${SITE}/layanan`);
   expect(locs).toContain(`${SITE}/portfolio/${seeded.serviceArticle.slug}`);
   expect(new Set(locs).size).toBe(locs.length);
 });

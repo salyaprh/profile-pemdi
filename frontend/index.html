@@ -10,9 +10,11 @@
     />
     <!--
       Meta statis tingkat situs untuk crawler yang tidak menjalankan JS (mis. pratinjau tautan).
-      canonical/og:url sengaja tidak di sini: HTML yang sama dilayani untuk semua path, jadi
+      canonical/og:url sengaja tidak di sini: HTML yang sama dilayani untuk semua halaman umum, jadi
       nilai statis akan salah. Keduanya diisi per halaman oleh src/lib/seo.ts.
-      og:image belum ada: butuh aset 1200x630 resmi.
+      Halaman artikel (/portfolio/{slug}) dilayani backend: ia mengganti title, description, og:*, dan
+      twitter:card di bawah ini dengan milik artikel (backend/app/Support/FrontendPage.php).
+      og:image situs belum ada: butuh aset 1200x630 resmi.
     -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="PEMDI PANRB" />

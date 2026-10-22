@@ -11,7 +11,7 @@ use Illuminate\Http\Response;
  */
 class SitemapController extends Controller
 {
-    private const STATIC_PATHS = ['/', '/portfolio', '/contact'];
+    private const STATIC_PATHS = ['/', '/layanan', '/portfolio', '/contact'];
 
     public function __invoke(): Response
     {
