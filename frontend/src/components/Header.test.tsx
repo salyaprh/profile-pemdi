@@ -1,11 +1,19 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { navigationItems } from '../data/siteContent';
+import { testCategories } from '../test/publicApi';
+import { server } from '../test/server';
 import { renderPublic as render, setUrl } from '../test/utils';
 import Header from './Header';
 
 const mainNav = () => screen.getByRole('navigation', { name: 'Navigasi utama' });
+/** Teks menu utama (tautan atau tombol dropdown) yang ditandai aria-current. */
+const currentItems = () =>
+  [...within(mainNav()).queryAllByRole('link'), ...within(mainNav()).queryAllByRole('button')]
+    .filter((item) => item.hasAttribute('aria-current'))
+    .map((item) => item.textContent);
 
 describe('Header', () => {
   it('menampilkan logo yang menaut ke beranda dengan nama aksesibel', () => {
@@ -16,11 +24,15 @@ describe('Header', () => {
     );
   });
 
-  it('menampilkan 3 menu utama sesuai pedoman IDDS (3-5 item)', () => {
+  it('menampilkan 3 menu utama sesuai pedoman IDDS (3-5 item), Portofolio sebagai dropdown', () => {
     render(<Header />);
     const links = within(mainNav()).getAllByRole('link');
-    expect(links.map((l) => l.textContent)).toEqual(['Beranda', 'Portofolio', 'Hubungi kami']);
-    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/', '/portfolio', '/contact']);
+    expect(links.map((l) => l.textContent)).toEqual(['Beranda', 'Hubungi kami']);
+    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/', '/contact']);
+    expect(within(mainNav()).getByRole('button', { name: 'Portofolio' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
     expect(navigationItems.length).toBeGreaterThanOrEqual(3);
     expect(navigationItems.length).toBeLessThanOrEqual(5);
   });
@@ -35,19 +47,13 @@ describe('Header', () => {
     setUrl(url);
     render(<Header />);
 
-    const current = within(mainNav())
-      .getAllByRole('link')
-      .filter((link) => link.getAttribute('aria-current') === 'page');
-    expect(current.map((l) => l.textContent)).toEqual([active]);
+    expect(currentItems()).toEqual([active]);
   });
 
   it('tidak menandai menu apa pun aktif pada halaman 404', () => {
     setUrl('/halaman-ngawur');
     render(<Header />);
-    const current = within(mainNav())
-      .getAllByRole('link')
-      .filter((link) => link.hasAttribute('aria-current'));
-    expect(current).toHaveLength(0);
+    expect(currentItems()).toEqual([]);
   });
 
   it('klik menu berpindah halaman dan memperbarui menu aktif', async () => {
@@ -64,6 +70,124 @@ describe('Header', () => {
     expect(within(mainNav()).getByRole('link', { name: 'Beranda' })).not.toHaveAttribute(
       'aria-current',
     );
+  });
+
+  describe('dropdown Portofolio', () => {
+    const toggle = () => within(mainNav()).getByRole('button', { name: 'Portofolio' });
+
+    it('dibuka dengan klik dan berisi semua portofolio + kategori dari CMS', async () => {
+      const user = userEvent.setup();
+      render(<Header />);
+
+      await user.click(toggle());
+      expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+      const panel = document.getElementById(toggle().getAttribute('aria-controls') ?? '');
+      expect(panel).not.toBeNull();
+      expect(within(panel!).getByRole('link', { name: 'Semua portofolio' })).toHaveAttribute(
+        'href',
+        '/portfolio',
+      );
+      for (const category of testCategories) {
+        expect(await within(panel!).findByRole('link', { name: category.name })).toHaveAttribute(
+          'href',
+          `/portfolio?kategori=${category.slug}`,
+        );
+      }
+    });
+
+    it('memilih kategori berpindah ke portofolio terfilter dan menutup dropdown', async () => {
+      const [category] = testCategories;
+      const user = userEvent.setup();
+      render(<Header />);
+
+      // Dibuka lewat keyboard: user-event memicu pointerleave saat kursor pindah ke dalam panel
+      // (tidak terjadi di browser), jadi hover diuji terpisah dan klik di panel diuji di e2e.
+      toggle().focus();
+      await user.keyboard('{Enter}');
+      await user.click(await within(mainNav()).findByRole('link', { name: category.name }));
+
+      expect(window.location.pathname + window.location.search).toBe(
+        `/portfolio?kategori=${category.slug}`,
+      );
+      expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+      expect(toggle()).toHaveAttribute('aria-current', 'true');
+    });
+
+    it('menandai kategori yang sedang dibuka dengan aria-current', async () => {
+      const [, category] = testCategories;
+      setUrl(`/portfolio?kategori=${category.slug}`);
+      const user = userEvent.setup();
+      render(<Header />);
+
+      await user.click(toggle());
+      expect(await within(mainNav()).findByRole('link', { name: category.name })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      expect(within(mainNav()).getByRole('link', { name: 'Semua portofolio' })).not.toHaveAttribute(
+        'aria-current',
+      );
+    });
+
+    it('ditutup dengan Escape dan fokus kembali ke tombol', async () => {
+      const user = userEvent.setup();
+      render(<Header />);
+
+      await user.click(toggle());
+      await user.tab();
+      expect(within(mainNav()).getByRole('link', { name: 'Semua portofolio' })).toHaveFocus();
+      await user.keyboard('{Escape}');
+
+      expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+      expect(toggle()).toHaveFocus();
+    });
+
+    it('ditutup saat klik di luar atau fokus berpindah keluar', async () => {
+      const user = userEvent.setup();
+      render(<Header />);
+
+      await user.click(toggle());
+      await user.click(document.body);
+      expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+
+      await user.click(toggle());
+      await user.click(screen.getByRole('textbox', { name: 'Cari artikel portofolio' }));
+      expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('dibuka saat mouse diarahkan, dan klik setelahnya tidak langsung menutup', async () => {
+      const user = userEvent.setup();
+      render(<Header />);
+
+      await user.hover(toggle());
+      expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+      await user.click(toggle());
+      expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+
+      await user.unhover(toggle());
+      expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('bila kategori gagal dimuat, tetap berisi tautan ke semua portofolio', async () => {
+      let failed = false;
+      server.use(
+        http.get('/api/categories', () => {
+          failed = true;
+          return HttpResponse.json({}, { status: 500 });
+        }),
+      );
+      const user = userEvent.setup();
+      render(<Header />);
+
+      await user.click(toggle());
+      await waitFor(() => expect(failed).toBe(true));
+      const links = within(mainNav()).getAllByRole('link');
+      expect(links.map((l) => l.textContent)).toEqual([
+        'Beranda',
+        'Semua portofolio',
+        'Hubungi kami',
+      ]);
+    });
   });
 
   it('menyertakan kolom pencarian', () => {
@@ -128,10 +252,46 @@ describe('Header', () => {
 
       await user.click(screen.getByRole('button', { name: 'Buka menu' }));
       const mobileNav = screen.getByRole('navigation', { name: 'Navigasi mobile' });
-      await user.click(within(mobileNav).getByRole('link', { name: 'Portofolio' }));
+      await user.click(within(mobileNav).getByRole('button', { name: 'Portofolio' }));
+      await user.click(within(mobileNav).getByRole('link', { name: 'Semua portofolio' }));
 
       expect(window.location.pathname).toBe('/portfolio');
       expect(document.getElementById('menu-mobile')).toBeNull();
+    });
+
+    it('submenu Portofolio dibuka lewat tombolnya dan berisi kategori', async () => {
+      const [category] = testCategories;
+      const user = userEvent.setup();
+      render(<Header />);
+
+      await user.click(screen.getByRole('button', { name: 'Buka menu' }));
+      const mobileNav = screen.getByRole('navigation', { name: 'Navigasi mobile' });
+      const subToggle = within(mobileNav).getByRole('button', { name: 'Portofolio' });
+      expect(subToggle).toHaveAttribute('aria-expanded', 'false');
+
+      await user.click(subToggle);
+      expect(subToggle).toHaveAttribute('aria-expanded', 'true');
+      await user.click(await within(mobileNav).findByRole('link', { name: category.name }));
+
+      expect(window.location.search).toBe(`?kategori=${category.slug}`);
+      expect(document.getElementById('menu-mobile')).toBeNull();
+    });
+
+    it('submenu Portofolio sudah terbuka saat berada di halaman portofolio', async () => {
+      setUrl('/portfolio');
+      const user = userEvent.setup();
+      render(<Header />);
+
+      await user.click(screen.getByRole('button', { name: 'Buka menu' }));
+      const mobileNav = screen.getByRole('navigation', { name: 'Navigasi mobile' });
+      expect(within(mobileNav).getByRole('button', { name: 'Portofolio' })).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      );
+      expect(within(mobileNav).getByRole('link', { name: 'Semua portofolio' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
     });
 
     it('menandai menu aktif juga di menu mobile', async () => {

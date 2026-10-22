@@ -73,9 +73,9 @@ src/
   main.tsx            entry: font, tema IDDS (setBrandTheme('inagov')), ErrorBoundary, ToastProvider
   App.tsx             pemetaan rute -> halaman
   index.css           Tailwind, token IDDS, skala tipografi IDDS
-  components/         Header, Footer, SearchBar, PaginationNav, ArticleCard, ButtonLink, EmptyState, ErrorBoundary, Layout
+  components/         Header, NavDropdown (submenu Portofolio), Footer, SearchBar, PaginationNav, ArticleCard, ButtonLink, EmptyState, ErrorBoundary, Layout
   pages/              Home, Articles (portofolio), ArticleDetail, Contact, NotFound
-  data/               siteContent.ts (menu, deskripsi situs, statistik beranda; dipindah ke Pengaturan di Fase 4)
+  data/               siteContent.ts (nama situs, deskripsi bawaan, menu utama; isi situs lain diatur Admin di Pengaturan)
   lib/                router.tsx, seo.ts (title/meta per halaman), validators.ts, format.ts
   services/           api.ts (klien API: sesi cookie + CSRF, pesan galat), content.ts (kontrak + hook API publik),
                       contact.ts (formulir kontak), queryClient.ts
@@ -107,19 +107,19 @@ Formulir mengirim `POST /api/contact` ke backend (se-origin, tanpa sesi dan tanp
 
 ## Deploy
 
-> **Sejak Fase 3 situs publik membutuhkan backend Laravel di origin yang sama** (artikel, kategori, formulir kontak, `sitemap.xml`). Hosting statis saja (Cloudflare Pages, Netlify, Vercel) tidak lagi cukup; konfigurasi Nginx lengkap untuk server PANRB disusun di Fase 5. Tabel di bawah hanya berlaku untuk bagian statisnya.
+> **Sejak Fase 3 situs publik membutuhkan backend Laravel di origin yang sama** (artikel, kategori, formulir kontak, `sitemap.xml`). Hosting statis saja (Cloudflare Pages, Netlify, Vercel) tidak lagi cukup. **Jalur utama: server PANRB/PDN dengan `../deploy/nginx.conf`, panduannya di `../deploy/README.md`.** Tabel di bawah hanya berlaku untuk bagian statisnya.
 
 Hasil build adalah berkas statis (`dist/`). Persyaratan hosting:
 
 1. **SPA fallback**: path tak dikenal harus dilayani `index.html`.
 2. **Header keamanan** dari `public/_headers` (CSP ketat, HSTS, `nosniff`, `frame-ancestors 'none'`, dll.) dan cache panjang untuk `/assets/*`.
 
-| Hosting                            | Cara                                                                                                                                                                                           |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Cloudflare Pages** (rekomendasi) | `public/_headers` terbaca otomatis. SPA fallback bawaan **selama tidak ada `404.html` di root** (jangan menambahkannya, dan tidak perlu `_redirects`). Build: `npm run build`, output: `dist`. |
-| **Netlify**                        | `_headers` terbaca otomatis; tambahkan `public/_redirects` berisi `/* /index.html 200`.                                                                                                        |
-| **Vercel**                         | Terjemahkan isi `_headers` ke `vercel.json` (`headers`) dan tambahkan `rewrites` ke `/index.html`.                                                                                             |
-| **Server sendiri / PDN**           | Lihat `../deploy/README.md` dan `../deploy/nginx.conf` (diuji di lokal, belum di server nyata).                                                                                                |
+| Hosting                  | Cara                                                                                                                                                                                           |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cloudflare Pages**     | `public/_headers` terbaca otomatis. SPA fallback bawaan **selama tidak ada `404.html` di root** (jangan menambahkannya, dan tidak perlu `_redirects`). Build: `npm run build`, output: `dist`. |
+| **Netlify**              | `_headers` terbaca otomatis; tambahkan `public/_redirects` berisi `/* /index.html 200`.                                                                                                        |
+| **Vercel**               | Terjemahkan isi `_headers` ke `vercel.json` (`headers`) dan tambahkan `rewrites` ke `/index.html`.                                                                                             |
+| **Server sendiri / PDN** | Lihat `../deploy/README.md` dan `../deploy/nginx.conf` (diuji di lokal, belum di server nyata).                                                                                                |
 
 Catatan:
 
@@ -131,7 +131,7 @@ Catatan:
 
 - `<title>`, deskripsi, `canonical`, dan `og:*` per halaman diatur `src/lib/seo.ts` di browser. Mesin pencari yang menjalankan JavaScript membacanya.
 - `robots.txt` dibuat saat build (baris Sitemap hanya bila `VITE_SITE_URL` diisi). `sitemap.xml` dibuat backend dari artikel terbit di database, jadi artikel baru langsung masuk tanpa build ulang.
-- **Keterbatasan:** pratinjau tautan (WhatsApp, dll.) tidak menjalankan JavaScript sehingga hanya melihat meta statis di `index.html`. Pratinjau per artikel dan `og:image` membutuhkan prerender/SSG dan aset gambar 1200×630 resmi.
+- Pratinjau tautan (WhatsApp, dll.) tidak menjalankan JavaScript. Karena itu `/portfolio/{slug}` dilayani backend Laravel (`ArticlePageController`), yang menyisipkan judul, deskripsi, `canonical`, `og:*`, dan `og:image` 1200×630 artikel ke `index.html`. Halaman lain memakai meta statis tingkat situs.
 
 ## Acuan desain
 
@@ -164,6 +164,7 @@ Beberapa komponen IDDS (`@idds/react` 1.6.x) tidak lolos WCAG 2.2 AA yang diacu 
 | `Chip`                   | chip yang aktif tidak diberi `aria-pressed`, jadi pembaca layar tidak tahu filter mana yang dipilih (WCAG 4.1.2)            | `FilterChips`: tombol toggle sendiri dengan kelas CSS `ina-chip` dan `aria-pressed`                            |
 | `Card`                   | `mediaAlt=""` diganti alt "Card media", sehingga pembaca layar membacakannya di awal setiap tautan kartu                    | `ArticleCard` menulis markup Card IDDS sendiri dengan `alt=""` dan `loading="lazy"`                            |
 | `SingleFileUpload`       | pratinjau memakai URL `blob:` yang diblokir CSP `img-src 'self'`                                                            | `ImageFileInput`: `<input type="file">` asli; pratinjau memakai URL hasil unggahan di server                   |
+| Header (menu ▾)          | anatomi Header IDDS punya menu dengan submenu, tetapi tidak ada komponennya; `BasicDropdown` melanggar `nested-interactive` | `NavDropdown`: pola disclosure WAI-ARIA (tombol + daftar tautan), gaya panel mengikuti `.ina-action-dropdown`  |
 
 Catatan: `Card` IDDS membungkus `title` dalam `<h3>` dan `description` dalam `<p>`. `ArticleCard` menulis markup itu langsung dengan kelas CSS `ina-card` (lihat tabel di atas).
 

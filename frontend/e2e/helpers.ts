@@ -11,6 +11,19 @@ export async function openSearch(page: Page, isMobile: boolean) {
 }
 
 /**
+ * Membuka submenu Portofolio: dropdown header di layar lebar, atau menu hamburger di layar kecil
+ * (submenu sudah terbuka di halaman portofolio).
+ */
+export async function openPortfolioSubmenu(page: Page, isMobile: boolean) {
+  const toggle = isMobile
+    ? page.getByRole('button', { name: 'Buka menu' })
+    : page.getByRole('navigation', { name: 'Navigasi utama' }).getByRole('button', {
+        name: 'Portofolio',
+      });
+  await toggle.click();
+}
+
+/**
  * Artikel placeholder dari seeder backend (database e2e). Uji lain bisa menerbitkan artikel baru
  * di kategori Layanan Publik secara paralel, jadi uji yang menghitung jumlah artikel memakai
  * kategori Panduan Pengguna (11 artikel) atau pola angka.

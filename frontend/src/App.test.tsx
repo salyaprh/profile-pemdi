@@ -81,7 +81,10 @@ describe('App: navigasi', () => {
     renderAt('/');
     const nav = screen.getByRole('navigation', { name: 'Navigasi utama' });
 
-    await user.click(within(nav).getByRole('link', { name: 'Portofolio' }));
+    // Portofolio berupa dropdown (lihat Header.test.tsx); dibuka dengan keyboard lalu pilih isinya.
+    within(nav).getByRole('button', { name: 'Portofolio' }).focus();
+    await user.keyboard('{Enter}');
+    await user.click(within(nav).getByRole('link', { name: 'Semua portofolio' }));
     expect(h1()).toHaveTextContent('Portofolio Pemerintah Digital');
 
     await user.click(within(nav).getByRole('link', { name: 'Hubungi kami' }));

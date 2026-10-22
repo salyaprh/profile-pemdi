@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 import { audit } from './a11y.helper';
 import { fillLogin, loginAs } from './admin.helper';
 import { expect, test } from './fixtures';
-import { openSearch, seeded } from './helpers';
+import { openPortfolioSubmenu, openSearch, seeded } from './helpers';
 
 const pages = [
   ['beranda', '/'],
@@ -65,6 +65,14 @@ test('axe: dropdown negara pada input telepon terbuka', async ({ page }) => {
   // selector ini yang dikecualikan; pelanggaran lain di halaman tetap dilaporkan. Perlu
   // dilaporkan ke tim IDDS (ux@inadigital.co.id).
   expect(await audit(page, { exclude: ['.ina-phone-input__country-list'] })).toEqual([]);
+});
+
+test('axe: submenu Portofolio terbuka', async ({ page, isMobile }) => {
+  await ready(page, '/portfolio');
+  await openPortfolioSubmenu(page, isMobile);
+  await expect(page.getByRole('link', { name: 'Panduan Pengguna' }).first()).toBeVisible();
+
+  expect(await audit(page)).toEqual([]);
 });
 
 test('axe: panel hasil pencarian terbuka', async ({ page, isMobile }) => {
