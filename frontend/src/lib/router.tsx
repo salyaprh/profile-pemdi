@@ -11,6 +11,7 @@ export const paths = {
   portfolio: '/portfolio',
   article: (slug: string) => `/portfolio/${encodeURIComponent(slug)}`,
   contact: '/contact',
+  services: '/layanan',
   admin: '/admin',
   adminLogin: '/admin/masuk',
   adminArticles: '/admin/artikel',
@@ -86,15 +87,40 @@ export function navigate(
   to: string,
   { replace = false, scroll = true, force = false }: NavigateOptions = {},
 ): boolean {
-  const current = window.location.pathname + window.location.search;
+  const current = window.location.pathname + window.location.search + window.location.hash;
   if (to !== current) {
     if (!force && navigationBlocker && !navigationBlocker()) return false;
     window.history[replace ? 'replaceState' : 'pushState'](null, '', to);
     window.dispatchEvent(new Event(NAVIGATE_EVENT));
   }
-  // 'instant' menimpa scroll-behavior: smooth dari CSS global IDDS.
-  if (scroll) window.scrollTo({ top: 0, behavior: 'instant' });
+  if (scroll) {
+    // Tujuan ber-#jangkar (mis. /layanan#evaluasi) dirender dulu, baru digulir ke elemennya.
+    if (to.includes('#')) requestAnimationFrame(scrollToHash);
+    // 'instant' menimpa scroll-behavior: smooth dari CSS global IDDS.
+    else window.scrollTo({ top: 0, behavior: 'instant' });
+  }
   return true;
+}
+
+/**
+ * Menggulir ke elemen yang ditunjuk #jangkar di URL saat ini dan memindahkan fokus ke sana, agar
+ * pengguna keyboard dan pembaca layar ikut berpindah. Elemen tujuan perlu tabIndex={-1}.
+ */
+export function scrollToHash() {
+  const id = decodeSegment(window.location.hash.slice(1));
+  const target = id ? document.getElementById(id) : null;
+  if (!target) return;
+  target.scrollIntoView({ behavior: 'instant', block: 'start' });
+  target.focus({ preventScroll: true });
+}
+
+/** decodeURIComponent yang mengembalikan null untuk %-encoding rusak (alih-alih melempar galat). */
+export function decodeSegment(segment: string): string | null {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return null;
+  }
 }
 
 export function useLocation() {

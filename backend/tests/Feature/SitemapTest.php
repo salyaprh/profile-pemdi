@@ -24,6 +24,7 @@ class SitemapTest extends TestCase
         preg_match_all('#<loc>([^<]+)</loc>#', (string) $response->getContent(), $matches);
         $this->assertSame([
             'https://pemdi.example.go.id/',
+            'https://pemdi.example.go.id/layanan',
             'https://pemdi.example.go.id/portfolio',
             'https://pemdi.example.go.id/contact',
             'https://pemdi.example.go.id/portfolio/integrasi-layanan',

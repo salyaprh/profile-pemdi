@@ -22,6 +22,8 @@ afterAll(() => server.close());
 beforeEach(() => {
   // jsdom tidak mengimplementasikan scrollTo; router memanggilnya saat berpindah halaman.
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+  // Begitu juga scrollIntoView, yang dipanggil router untuk tautan ber-#jangkar (/layanan#evaluasi).
+  Element.prototype.scrollIntoView = vi.fn();
   window.history.replaceState(null, '', '/');
 });
 

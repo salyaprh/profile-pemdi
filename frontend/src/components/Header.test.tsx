@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { navigationItems } from '../data/siteContent';
+import { navigationItems, services } from '../data/siteContent';
 import { testCategories } from '../test/publicApi';
 import { server } from '../test/server';
 import { renderPublic as render, setUrl } from '../test/utils';
@@ -43,6 +43,8 @@ describe('Header', () => {
     ['/portfolio?kategori=Layanan+Publik', 'Portofolio'],
     ['/portfolio/3', 'Portofolio'],
     ['/contact', 'Hubungi kami'],
+    ['/layanan', 'Layanan'],
+    ['/layanan#arsitektur', 'Layanan'],
   ])('menandai menu aktif dengan aria-current untuk %s -> %s', (url, active) => {
     setUrl(url);
     render(<Header />);
@@ -70,6 +72,39 @@ describe('Header', () => {
     expect(within(mainNav()).getByRole('link', { name: 'Beranda' })).not.toHaveAttribute(
       'aria-current',
     );
+  });
+
+  describe('dropdown Layanan', () => {
+    it('berisi layanan yang punya alamat, masing-masing menaut ke kartunya di /layanan', async () => {
+      const user = userEvent.setup();
+      render(<Header />);
+
+      const toggle = within(mainNav()).getByRole('button', { name: 'Layanan' });
+      toggle.focus();
+      await user.keyboard('{Enter}');
+
+      const panel = document.getElementById(toggle.getAttribute('aria-controls') ?? '')!;
+      const links = within(panel).getAllByRole('link');
+      expect(links.map((l) => [l.textContent, l.getAttribute('href')])).toEqual(
+        services.map((service) => [service.name, `/layanan#${service.id}`]),
+      );
+      // Survei Kepuasan belum punya alamat, jadi belum tampil.
+      expect(within(panel).queryByRole('link', { name: 'Survei Kepuasan' })).toBeNull();
+    });
+
+    it('memilih layanan membuka /layanan dengan #jangkar dan menutup dropdown', async () => {
+      const user = userEvent.setup();
+      render(<Header />);
+
+      const toggle = within(mainNav()).getByRole('button', { name: 'Layanan' });
+      toggle.focus();
+      await user.keyboard('{Enter}');
+      await user.click(within(mainNav()).getByRole('link', { name: 'Arsitektur' }));
+
+      expect(window.location.pathname + window.location.hash).toBe('/layanan#arsitektur');
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(toggle).toHaveAttribute('aria-current', 'true');
+    });
   });
 
   describe('dropdown Portofolio', () => {

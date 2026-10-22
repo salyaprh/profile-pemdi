@@ -10,6 +10,7 @@ const pages = [
   ['portofolio terfilter', '/portfolio?kategori=layanan-publik&halaman=2'],
   ['detail artikel', `/portfolio/${seeded.serviceArticle.slug}`],
   ['kontak', '/contact'],
+  ['layanan', '/layanan'],
   ['404', '/halaman-ngawur'],
   ['artikel tidak ditemukan', '/portfolio/999'],
 ] as const;

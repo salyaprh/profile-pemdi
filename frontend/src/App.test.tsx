@@ -20,6 +20,8 @@ describe('App: peta rute', () => {
     ['/portfolio/', 'Portofolio Pemerintah Digital'],
     ['/contact', 'Hubungi kami'],
     ['/contact/', 'Hubungi kami'],
+    ['/layanan', 'Layanan'],
+    ['/layanan#evaluasi', 'Layanan'],
     [`/portfolio/${testArticles[2].slug}`, testArticles[2].title],
   ])('%s -> %s', async (url, heading) => {
     renderAt(url);

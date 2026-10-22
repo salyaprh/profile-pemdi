@@ -51,6 +51,7 @@ CI (`../.github/workflows/ci.yml`) menjalankan dua job frontend pada setiap PR: 
 | Path                                        | Halaman                                                                                            |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `/`                                         | Beranda                                                                                            |
+| `/layanan`                                  | Layanan PEMDI (kartu per layanan, tautan ke platformnya); menu Layanan menaut ke `/layanan#<id>`   |
 | `/portfolio`                                | Daftar portofolio. Filter (slug kategori) dan halaman di URL: `?kategori=layanan-publik&halaman=2` |
 | `/portfolio/:slug`                          | Detail artikel + artikel terkait (404 bila tidak ada atau belum terbit)                            |
 | `/contact`                                  | Formulir "Hubungi kami"                                                                            |
@@ -74,8 +75,8 @@ src/
   App.tsx             pemetaan rute -> halaman
   index.css           Tailwind, token IDDS, skala tipografi IDDS
   components/         Header, NavDropdown (submenu Portofolio), Footer, SearchBar, PaginationNav, ArticleCard, ButtonLink, EmptyState, ErrorBoundary, Layout
-  pages/              Home, Articles (portofolio), ArticleDetail, Contact, NotFound
-  data/               siteContent.ts (nama situs, deskripsi bawaan, menu utama; isi situs lain diatur Admin di Pengaturan)
+  pages/              Home, Services (layanan), Articles (portofolio), ArticleDetail, Contact, NotFound
+  data/               siteContent.ts (nama situs, deskripsi bawaan, menu utama, daftar layanan; isi situs lain diatur Admin di Pengaturan)
   lib/                router.tsx, seo.ts (title/meta per halaman), validators.ts, format.ts
   services/           api.ts (klien API: sesi cookie + CSRF, pesan galat), content.ts (kontrak + hook API publik),
                       contact.ts (formulir kontak), queryClient.ts
@@ -185,3 +186,4 @@ Catatan: `Card` IDDS membungkus `title` dalam `<h3>` dan `description` dalam `<p
 - 36 artikel dan 3 kategori dari seeder backend (`../backend/database/seeders/data/placeholder-content.json`) masih placeholder; ganti lewat CMS.
 - Angka statistik beranda dan deskripsi situs kini diatur Admin di **Pengaturan**, tetapi nilai bawaannya (`../backend/app/Support/SiteSettings.php`) masih placeholder; isi dengan data resmi.
 - Tautan media sosial dan kontak di footer kosong sampai Admin mengisinya (URL resmi belum diketahui).
+- Daftar layanan (menu Layanan dan `/layanan`) ada di `src/data/siteContent.ts` (`allServices`), bukan di CMS. **Survei Kepuasan** sudah disiapkan tetapi tersembunyi karena alamatnya belum ada: isi `url` entri `survei-kepuasan`, maka layanan itu tampil otomatis di menu dan halaman. Alamat empat layanan lain mengikuti repo referensi `aldinosauruss/portal-pemdi`; pastikan ke pemiliknya sebelum rilis.

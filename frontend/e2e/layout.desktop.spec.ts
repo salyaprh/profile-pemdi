@@ -37,6 +37,27 @@ test('dropdown Portofolio terbuka saat hover, berisi kategori, dan klik kategori
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 });
 
+test('dropdown Layanan: memilih layanan membuka kartunya di /layanan, tepat di bawah header', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const nav = page.getByRole('navigation', { name: 'Navigasi utama' });
+  await nav.getByRole('button', { name: 'Layanan' }).click();
+  await nav.getByRole('link', { name: 'Arsitektur' }).click();
+
+  await expect(page).toHaveURL(/\/layanan#arsitektur$/);
+  const card = page.getByRole('region', { name: 'Arsitektur SPBE' });
+  await expect(card).toBeFocused();
+  await expect(card).toBeInViewport();
+  // Kartu tidak tertutup header sticky (72px).
+  const box = await card.boundingBox();
+  expect(box?.y).toBeGreaterThanOrEqual(72);
+
+  await expect(
+    card.getByRole('link', { name: 'Buka Arsitektur (membuka tab baru)' }),
+  ).toHaveAttribute('href', 'https://arsitektur.spbe.go.id');
+});
+
 test('dropdown Portofolio bisa dipakai dengan keyboard dan ditutup dengan Escape', async ({
   page,
 }) => {

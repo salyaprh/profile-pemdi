@@ -81,6 +81,28 @@ describe('navigate', () => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
   });
 
+  it('tujuan ber-#jangkar menggulir ke elemennya dan memindahkan fokus, bukan ke atas halaman', async () => {
+    const target = document.createElement('section');
+    target.id = 'evaluasi';
+    target.tabIndex = -1;
+    document.body.append(target);
+
+    navigate('/layanan#evaluasi');
+
+    await vi.waitFor(() => expect(target).toHaveFocus());
+    expect(target.scrollIntoView).toHaveBeenCalledWith({ behavior: 'instant', block: 'start' });
+    expect(window.scrollTo).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe('#evaluasi');
+    target.remove();
+  });
+
+  it('pindah #jangkar di halaman yang sama tetap menambah riwayat', () => {
+    navigate('/layanan#evaluasi');
+    const before = window.history.length;
+    navigate('/layanan#arsitektur');
+    expect(window.history.length).toBe(before + 1);
+  });
+
   it('tidak menambah riwayat bila URL sama', () => {
     navigate('/contact');
     const before = window.history.length;

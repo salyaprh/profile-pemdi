@@ -52,6 +52,7 @@ test.describe('meta per halaman (setelah JavaScript berjalan)', () => {
     { path: '/', canonical: `${SITE}/`, title: 'Pemerintah Digital | PEMDI PANRB' },
     { path: '/portfolio', canonical: `${SITE}/portfolio`, title: 'Portofolio | PEMDI PANRB' },
     { path: '/contact', canonical: `${SITE}/contact`, title: 'Hubungi kami | PEMDI PANRB' },
+    { path: '/layanan', canonical: `${SITE}/layanan`, title: 'Layanan | PEMDI PANRB' },
     {
       path: `/portfolio/${seeded.serviceArticle.slug}`,
       canonical: `${SITE}/portfolio/${seeded.serviceArticle.slug}`,

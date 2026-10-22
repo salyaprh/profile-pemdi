@@ -66,6 +66,8 @@ Pesan berisi data pribadi pengirim. Karena itu:
 
 **Pengaturan** mengatur deskripsi situs, tiga angka statistik di beranda beserta keterangannya, kontak (email, telepon, alamat), dan tautan media sosial (harus diawali `https://`). Kolom yang dikosongkan tidak ditampilkan. Isinya ditampilkan sebagai teks biasa, bukan HTML.
 
+Menu **Layanan** (Evaluasi, Kompetensi, Arsitektur, Ega Pemdi, Survei Kepuasan) dan halaman Layanan tidak diatur dari CMS. Untuk menambah layanan atau mengubah alamatnya, minta tim pengembang mengubah `frontend/src/data/siteContent.ts`.
+
 ## Aktivitas (Admin)
 
 **Aktivitas** mencatat siapa melakukan apa dan kapan: masuk dan gagal masuk, perubahan artikel, kategori, pengguna, dan pengaturan. Catatannya hanya bisa dibaca, memuat alamat IP, dan dihapus otomatis setelah 24 bulan. Gunakan untuk menelusuri perubahan, atau bila ada percobaan masuk yang mencurigakan.
